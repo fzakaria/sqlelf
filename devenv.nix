@@ -11,7 +11,7 @@
   languages.python = {
     enable = true;
     venv.enable = true;
-    package = pkgs.python3.withPackages (ps: with ps; [ apsw ]);
+    package = pkgs.python3.withPackages (ps: with ps; [ apsw lief black ]);
   };
 
   # https://devenv.sh/integrations/codespaces-devcontainer/
