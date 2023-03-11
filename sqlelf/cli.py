@@ -1,6 +1,7 @@
 import argparse
 import os
 import tempfile
+from functools import reduce
 
 import apsw
 import apsw.shell
@@ -20,12 +21,21 @@ def start():
     )
 
     args = parser.parse_args()
-    for filename in args.filenames:
-        if not lief.is_elf(filename):
-            print(f"{filename} is not elf format")
-            exit(1)
 
-    binaries: list[lief.Binary] = [lief.parse(filename) for filename in args.filenames]
+    # Iterate through our arguments and if one of them is a directory explode it out
+    filenames = reduce(
+        lambda a, b: a + b,
+        map(
+            lambda dir: [os.path.join(dir, f) for f in os.listdir(dir)]
+            if os.path.isdir(dir)
+            else [dir],
+            args.filenames,
+        ),
+    )
+    # Filter the list of filenames to those that are ELF files only
+    filenames = list(filter(lambda f: lief.is_elf(f), filenames))
+
+    binaries: list[lief.Binary] = [lief.parse(filename) for filename in filenames]
 
     # forward sqlite logs to logging module
     # apsw.ext.log_sqlite()

@@ -1,3 +1,6 @@
+# Without this Python was complaining
+from __future__ import annotations
+
 from typing import Any, Sequence, Tuple
 
 import apsw
