@@ -8,7 +8,7 @@ import apsw.ext
 import apsw.shell
 import lief
 
-from .elf import header
+from .elf import header, section
 
 
 def start():
@@ -44,5 +44,6 @@ def start():
     databse_path = os.path.join(tempfile.mkdtemp(), "database")
     connection = apsw.Connection(databse_path)
     header.register(connection, binaries)
+    section.register(connection, binaries)
     shell = apsw.shell.Shell(db=connection)
     shell.cmdloop()
