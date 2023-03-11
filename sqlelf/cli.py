@@ -3,6 +3,8 @@ import lief
 import argparse
 import apsw.shell
 from typing import Sequence, Tuple, Union
+import tempfile
+import os
 
 SQLiteValue = Union[None, int, float, bytes, str]
 
@@ -20,7 +22,7 @@ class ElfHeaderModule(object):
         *args,
     ):
         schema = "CREATE TABLE elf_header (type, machine, version, entry)"
-        return schema, ElfHeaderTable(binary)
+        return schema, ElfHeaderTable(self.binary)
 
     Connect = Create
 
@@ -37,7 +39,7 @@ class ElfHeaderTable(object):
         return None
 
     def Open(self):
-        return SingleRowCursor(binary)
+        return SingleRowCursor(self.binary)
 
     def Disconnect(self):
         pass
@@ -94,7 +96,7 @@ class SingleRowCursor(object):
                 raise Exception(f"Unknown column number {number}")
 
 
-if __name__ == "__main__":
+def start():
     parser = argparse.ArgumentParser(
         prog="sqlelf",
         description="Analyze ELF files with the power of SQL",
@@ -112,7 +114,8 @@ if __name__ == "__main__":
     # forward sqlite logs to logging module
     # apsw.ext.log_sqlite()
     # Now we create the connection
-    connection = apsw.Connection("dbfile")
+    databse_path = os.path.join(tempfile.mkdtemp(), "database")
+    connection = apsw.Connection(databse_path)
     # register the vtable on connection con
     connection.createmodule("elf_header", ElfHeaderModule(binary))
     # tell SQLite about the table

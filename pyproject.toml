@@ -5,3 +5,6 @@ dependencies = [
     "apsw",
     "lief",
 ]
+
+[project.scripts]
+sqlelf = "sqlelf.cli:start"
