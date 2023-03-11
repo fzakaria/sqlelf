@@ -1,0 +1,7 @@
+[project]
+name = "sqlelf"
+version = "0.0.1"
+dependencies = [
+    "apsw",
+    "lief",
+]
