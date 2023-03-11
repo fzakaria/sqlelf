@@ -11,8 +11,8 @@ SQLiteValue = Union[None, int, float, bytes, str]
 
 
 class ElfHeaderModule(object):
-    def __init__(self, binary):
-        self.binary = binary
+    def __init__(self, binaries):
+        self.binaries = binaries
 
     def Create(
         self,
@@ -22,15 +22,15 @@ class ElfHeaderModule(object):
         tablename: str,
         *args,
     ):
-        schema = "CREATE TABLE elf_header (type, machine, version, entry)"
-        return schema, ElfHeaderTable(self.binary)
+        schema = "CREATE TABLE elf_header (path, type, machine, version, entry)"
+        return schema, ElfHeaderTable(self.binaries)
 
     Connect = Create
 
 
 class ElfHeaderTable(object):
-    def __init__(self, binary: lief.Binary):
-        self.binary = binary
+    def __init__(self, binaries: list[lief.Binary]):
+        self.binaries = binaries
 
     def BestIndex(
         self,
@@ -40,7 +40,7 @@ class ElfHeaderTable(object):
         return None
 
     def Open(self):
-        return SingleRowCursor(self.binary)
+        return ElfHeaderCursor(self.binaries)
 
     def Disconnect(self):
         pass
@@ -58,22 +58,22 @@ class ElfHeaderTable(object):
         pass
 
 
-class SingleRowCursor(object):
-    def __init__(self, binary: lief.Binary):
-        self.binary = binary
-        self.closed = False
+class ElfHeaderCursor(object):
+    def __init__(self, binaries: list[lief.Binary]):
+        self.binaries = binaries
+        self.index = 0
 
     def Close(self):
         pass
 
     def Eof(self) -> bool:
-        return self.closed
+        return self.index >= len(self.binaries)
 
     def Next(self):
-        self.closed = True
+        self.index += 1
 
     def Rowid(self):
-        return 0
+        return self.index
 
     def Filter(
         self, indexnum: int, indexname: str, constraintargs: Tuple | None
@@ -81,20 +81,19 @@ class SingleRowCursor(object):
         pass
 
     def Column(self, number: int) -> SQLiteValue:
-        match number:
-            # Return the rowid which should always be 0
-            case -1:
-                return 0
-            case 0:
-                return self.binary.header.file_type.value
-            case 1:
-                return self.binary.header.machine_type.value
-            case 2:
-                return self.binary.header.identity_version.value
-            case 3:
-                return self.binary.header.entrypoint
-            case _:
-                raise Exception(f"Unknown column number {number}")
+        binary = self.binaries[self.index]
+        columns = [
+            binary.name,
+            binary.header.file_type.value,
+            binary.header.machine_type.value,
+            binary.header.identity_version.value,
+            binary.header.entrypoint,
+        ]
+        if number == -1:
+            return 0
+        if number >= len(columns):
+            raise Exception(f"Unknown column number {number}")
+        return columns[number]
 
 
 def start():
@@ -103,14 +102,17 @@ def start():
         description="Analyze ELF files with the power of SQL",
         epilog="Brought to you with ♥ by Farid Zakaria",
     )
-    parser.add_argument("filename", metavar="FILE", help="The ELF file to analyze")
+    parser.add_argument(
+        "filenames", nargs="+", metavar="FILE", help="The ELF file to analyze"
+    )
+
     args = parser.parse_args()
+    for filename in args.filenames:
+        if not lief.is_elf(filename):
+            print(f"{filename} is not elf format")
+            exit(1)
 
-    if not lief.is_elf(args.filename):
-        print(f"{args.filename} is not elf format")
-        exit(1)
-
-    binary: lief.Binary = lief.parse(args.filename)
+    binaries: list[lief.Binary] = [lief.parse(filename) for filename in args.filenames]
 
     # forward sqlite logs to logging module
     # apsw.ext.log_sqlite()
@@ -118,7 +120,7 @@ def start():
     databse_path = os.path.join(tempfile.mkdtemp(), "database")
     connection = apsw.Connection(databse_path)
     # register the vtable on connection con
-    connection.createmodule("elf_header", ElfHeaderModule(binary))
+    connection.createmodule("elf_header", ElfHeaderModule(binaries))
     # tell SQLite about the table
     connection.execute("create VIRTUAL table temp.elf_header USING elf_header()")
     shell = apsw.shell.Shell(db=connection)
