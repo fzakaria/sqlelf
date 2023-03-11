@@ -28,4 +28,4 @@ def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator.columns, generator.column_access = apsw.ext.get_column_names(
         next(generator())
     )
-    apsw.ext.make_virtual_module(connection, "elf_header", generator)
+    apsw.ext.make_virtual_module(connection, "elf_headers", generator)
