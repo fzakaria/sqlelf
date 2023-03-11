@@ -1,7 +1,7 @@
 import argparse
 import os
 import tempfile
-from typing import Sequence, Tuple, Union, Any
+from typing import Any, Sequence, Tuple, Union
 
 import apsw
 import apsw.shell
