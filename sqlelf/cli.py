@@ -4,6 +4,7 @@ import tempfile
 from functools import reduce
 
 import apsw
+import apsw.ext
 import apsw.shell
 import lief
 
@@ -38,13 +39,10 @@ def start():
     binaries: list[lief.Binary] = [lief.parse(filename) for filename in filenames]
 
     # forward sqlite logs to logging module
-    # apsw.ext.log_sqlite()
+    apsw.ext.log_sqlite()
     # Now we create the connection
     databse_path = os.path.join(tempfile.mkdtemp(), "database")
     connection = apsw.Connection(databse_path)
-    # register the vtable on connection con
-    connection.createmodule("elf_header", header.Module(binaries))
-    # tell SQLite about the table
-    connection.execute("create VIRTUAL table temp.elf_header USING elf_header()")
+    header.register(connection, binaries)
     shell = apsw.shell.Shell(db=connection)
     shell.cmdloop()
