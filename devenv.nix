@@ -6,12 +6,12 @@
   env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = [ pkgs.git ];
+  packages = with pkgs; [ git pyright ];
 
   languages.python = {
     enable = true;
     venv.enable = true;
-    package = pkgs.python3.withPackages (ps: with ps; [ apsw lief black ]);
+    package = pkgs.python3.withPackages (ps: with ps; [ apsw lief black isort flake8 ]);
   };
 
   # https://devenv.sh/integrations/codespaces-devcontainer/

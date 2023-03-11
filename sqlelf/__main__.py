@@ -1,4 +1,4 @@
-from . import start
+from . import cli
 
 if __name__ == "__main__":
-    start()
+    cli.start()

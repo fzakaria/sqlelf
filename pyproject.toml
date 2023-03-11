@@ -1,6 +1,13 @@
 [project]
 name = "sqlelf"
 version = "0.0.1"
+authors = [ 
+    { name = "Farid Zakaria", email = "farid.m.zakaria@gmail.com" }, 
+]
+homepage = "https://github.com/fzakaria/sqlelf"
+description = "Explore ELF objects through the power of SQL"
+license = { text = "MIT" }
+requires-python = ">=3.10"
 dependencies = [
     "apsw",
     "lief",
@@ -8,3 +15,16 @@ dependencies = [
 
 [project.scripts]
 sqlelf = "sqlelf.cli:start"
+
+[tool.pyright]
+include = ["sqlelf"]
+exclude = [
+    "**/__pycache__",
+]
+
+reportMissingImports = true
+reportMissingTypeStubs = true
+useLibraryCodeForTypes = true
+
+pythonVersion = "3.10"
+pythonPlatform = "Linux"

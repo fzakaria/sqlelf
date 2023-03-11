@@ -1,10 +1,11 @@
-import apsw
-import lief
 import argparse
-import apsw.shell
-from typing import Sequence, Tuple, Union
-import tempfile
 import os
+import tempfile
+from typing import Sequence, Tuple, Union, Any
+
+import apsw
+import apsw.shell
+import lief
 
 SQLiteValue = Union[None, int, float, bytes, str]
 
@@ -35,7 +36,7 @@ class ElfHeaderTable(object):
         self,
         constraints: Sequence[Tuple[int, int]],
         orderbys: Sequence[Tuple[int, int]],
-    ) -> any:
+    ) -> Any:
         return None
 
     def Open(self):
@@ -92,7 +93,7 @@ class SingleRowCursor(object):
                 return self.binary.header.identity_version.value
             case 3:
                 return self.binary.header.entrypoint
-            case other:
+            case _:
                 raise Exception(f"Unknown column number {number}")
 
 
@@ -119,6 +120,6 @@ def start():
     # register the vtable on connection con
     connection.createmodule("elf_header", ElfHeaderModule(binary))
     # tell SQLite about the table
-    connection.execute(f"create VIRTUAL table temp.elf_header USING elf_header()")
+    connection.execute("create VIRTUAL table temp.elf_header USING elf_header()")
     shell = apsw.shell.Shell(db=connection)
     shell.cmdloop()
