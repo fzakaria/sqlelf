@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Sequence, Tuple
 
 import apsw
+import apsw.ext
 import lief
 
 
@@ -91,3 +92,15 @@ class Cursor(object):
         if number >= len(columns):
             raise Exception(f"Unknown column number {number}")
         return columns[number]
+
+
+def table_range(start=1, stop=100, step=1):
+    for i in range(start, stop + 1, step):
+        yield (i,)
+
+
+# set column names
+table_range.columns = ("value",)
+
+# register it
+apsw.ext.make_virtual_module(connection, "range", table_range)

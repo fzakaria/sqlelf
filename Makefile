@@ -19,9 +19,11 @@ show:             ## Show the current environment.
 fmt:              ## Format code using black & isort.
 	$(ENV_PREFIX)isort sqlelf/
 	$(ENV_PREFIX)black sqlelf/
+	nixpkgs-fmt .
 
 .PHONY: lint
 lint:             ## Run pep8, black, mypy linters.
 	$(ENV_PREFIX)flake8 sqlelf/
 	$(ENV_PREFIX)black --check sqlelf/
 	$(ENV_PREFIX)pyright
+	nixpkgs-fmt --check .
