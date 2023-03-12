@@ -13,12 +13,15 @@ let
   });
   pythonPackageOverrides = self: super: {
     apsw = super.apsw.overridePythonAttrs (oldAttrs: rec {
-      version = "3.41.0.0";
+      version = "3.41.0.1";
       src = pkgs.fetchFromGitHub {
         owner = "rogerbinns";
         repo = "apsw";
-        rev = "refs/tags/${version}";
-        sha256 = "sha256-U7NhC83wBaUONLsQbL+j9866u4zs58O6AQxwzS3e0qM=";
+        # Use this custom commit with a fix for JOIN virtual table
+        # until the next release
+        rev = "ef2487eb5dcb75d2350fc91cb931ac4b196442a8";
+        # rev = "refs/tags/${version}";
+        sha256 = "sha256-xkFdTXARCP9RsrIJ/ZnlQwJo6g6mwWsH5WUHK0W7dkY=";
       };
       buildInputs = [
         sqlite-3411
