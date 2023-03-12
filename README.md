@@ -1,5 +1,7 @@
 # sqlelf
 
+![example workflow](https://github.com/fzakaria/sqlelf/actions/workflows/main.yml/badge.svg)
+
 A tool that utilizes SQLite's virtual table functionality to allow you to explore Linux ELF objects through SQL.
 
 Traditionally exploring an ELF file was limited to tools such as `objdump` or `readelf`. While these tools are full featured in their parsing capability, the output format and ability to ask exploratory questions is limited.
