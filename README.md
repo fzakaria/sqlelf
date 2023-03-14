@@ -9,6 +9,38 @@ Traditionally exploring an ELF file was limited to tools such as `objdump` or `r
 `SQL` is the _lingua franca_ for asking questions in a declarative manner.
 Let's enhance our ability to introspect binaries!
 
+```mermaid
+---
+title: ELF Schema
+---
+erDiagram
+    ELF_HEADERS ||--o{ ELF_SECTIONS : contains
+    ELF_HEADERS {
+        string path
+        int type
+        int version
+        int machine
+        int entry
+    }
+    ELF_SECTIONS {
+        string path
+        string name
+        int offset
+        int size
+        int type
+    }
+    ELF_HEADERS ||--o{ ELF_SYMBOLS : contains
+    ELF_SECTIONS ||--o{ ELF_SYMBOLS : defined
+    ELF_SYMBOLS {
+        string path
+        string name
+        string demangled_name
+        int section
+        int size
+    }
+
+```
+
 ## Installation
 This repository can easily be installed via source, you simply need to have [Nix or NixOS](https://nixos.org) installed.
 

@@ -8,7 +8,7 @@ import apsw.ext
 import apsw.shell
 import lief
 
-from .elf import header, section
+from .elf import header, section, symbol
 
 
 def start():
@@ -45,5 +45,6 @@ def start():
     connection = apsw.Connection(databse_path)
     header.register(connection, binaries)
     section.register(connection, binaries)
+    symbol.register(connection, binaries)
     shell = apsw.shell.Shell(db=connection)
     shell.cmdloop()
