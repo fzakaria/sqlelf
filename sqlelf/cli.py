@@ -20,6 +20,9 @@ def start():
     parser.add_argument(
         "filenames", nargs="+", metavar="FILE", help="The ELF file to analyze"
     )
+    parser.add_argument(
+        "-s", "--sql", help="Potential SQL to execute. Omitting this enters the REPL."
+    )
 
     args = parser.parse_args()
 
@@ -47,4 +50,8 @@ def start():
     section.register(connection, binaries)
     symbol.register(connection, binaries)
     shell = apsw.shell.Shell(db=connection)
-    shell.cmdloop()
+
+    if args.sql:
+        shell.process_complete_line(args.sql)
+    else:
+        shell.cmdloop()

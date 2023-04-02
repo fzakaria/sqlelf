@@ -17,7 +17,7 @@ def elf_sections(binaries: list[lief.Binary]):
                     "name": section.name,
                     "offset": section.offset,
                     "size": section.size,
-                    "type": section.type.value,
+                    "type": section.type.name,
                 }
 
     return generator

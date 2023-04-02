@@ -13,9 +13,9 @@ def elf_headers(binaries: list[lief.Binary]):
         for binary in binaries:
             yield {
                 "path": binary.name,
-                "type": binary.header.file_type.value,
-                "machine": binary.header.machine_type.value,
-                "version": binary.header.identity_version.value,
+                "type": binary.header.file_type.name,
+                "machine": binary.header.machine_type.name,
+                "version": binary.header.identity_version.name,
                 "entry": binary.header.entrypoint,
             }
 
