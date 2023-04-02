@@ -8,7 +8,7 @@ import apsw.ext
 import apsw.shell
 import lief
 
-from .elf import header, section, symbol
+from .elf import dynamic, header, section, strings, symbol
 
 
 def start():
@@ -49,6 +49,9 @@ def start():
     header.register(connection, binaries)
     section.register(connection, binaries)
     symbol.register(connection, binaries)
+    dynamic.register(connection, binaries)
+    strings.register(connection, binaries)
+
     shell = apsw.shell.Shell(db=connection)
 
     if args.sql:

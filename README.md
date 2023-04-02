@@ -38,7 +38,18 @@ erDiagram
         int section
         int size
     }
-
+    ELF_HEADERS ||--o{ ELF_STRINGS : defined
+    ELF_STRINGS {
+        string path
+        string section
+        string value
+    }
+    ELF_HEADERS ||--o{ ELF_DYNAMIC_ENTRIES : defined
+    ELF_DYNAMIC_ENTRIES {
+        string path
+        string tag
+        string value
+    }
 ```
 
 ## Installation
@@ -54,7 +65,6 @@ Entering shell ...
 ❯ pip install --editable .
 ❯ sqlelf --help
 ```
-
 
 ## Usage
 ```console
@@ -78,12 +88,17 @@ You simply have to fire up `sqlelf` and give it a list of binaries or directorie
 Simple demo showing a simple `SELECT` :
 
 ```console
+❯ sqlelf /usr/bin/ruby --sql "select * from elf_headers"
+/usr/bin/ruby|DYNAMIC|x86_64|CURRENT|4400
+```
+
+```console
 ❯ sqlelf /usr/bin/ruby /bin/ls
 SQLite version 3.40.1 (APSW 3.40.0.0)
 Enter ".help" for instructions
 Enter SQL statements terminated with a ";"
 sqlite> .header ON
-sqlite> select * from elf_header;
+sqlite> select * from elf_headers;
 path|type|machine|version|entry
 /usr/bin/ruby|3|62|1|4400
 /bin/ls|3|62|1|25040
