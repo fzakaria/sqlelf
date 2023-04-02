@@ -28,6 +28,7 @@ erDiagram
         int offset
         int size
         int type
+        blob content
     }
     ELF_HEADERS ||--o{ ELF_SYMBOLS : contains
     ELF_SECTIONS ||--o{ ELF_SYMBOLS : defined
@@ -35,6 +36,8 @@ erDiagram
         string path
         string name
         string demangled_name
+        bool imported
+        bool exported
         int section
         int size
     }
