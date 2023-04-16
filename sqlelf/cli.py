@@ -8,7 +8,7 @@ import apsw.ext
 import apsw.shell
 import lief
 
-from .elf import dynamic, header, section, strings, symbol
+from .elf import dynamic, header, instruction, section, strings, symbol
 
 
 def start():
@@ -51,6 +51,7 @@ def start():
     symbol.register(connection, binaries)
     dynamic.register(connection, binaries)
     strings.register(connection, binaries)
+    instruction.register(connection, binaries)
 
     shell = apsw.shell.Shell(db=connection)
 

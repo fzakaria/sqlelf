@@ -42,7 +42,7 @@ in
     venv.enable = true;
     package = (pkgs.python3.override {
       packageOverrides = pythonPackageOverrides;
-    }).withPackages (ps: with ps; [ apsw lief black isort flake8 ]);
+    }).withPackages (ps: with ps; [ capstone apsw lief black isort flake8 ]);
   };
 
   # https://devenv.sh/integrations/codespaces-devcontainer/
