@@ -15,6 +15,11 @@ dependencies = [
 [project.scripts]
 sqlelf = "sqlelf.cli:start"
 
+[tool.setuptools]
+py-modules = [
+    "sqlelf"
+]
+
 [tool.pyright]
 include = ["sqlelf"]
 exclude = [
