@@ -41,12 +41,6 @@ erDiagram
         int section
         int size
     }
-    ELF_HEADERS ||--o{ ELF_STRINGS : defined
-    ELF_STRINGS {
-        string path
-        string section
-        string value
-    }
     ELF_HEADERS ||--o{ ELF_DYNAMIC_ENTRIES : defined
     ELF_DYNAMIC_ENTRIES {
         string path
