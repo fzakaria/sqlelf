@@ -53,6 +53,20 @@ erDiagram
         string tag
         string value
     }
+    ELF_SECTIONS ||--o{ ELF_INSTRUCTIONS : contains
+    ELF_INSTRUCTIONS {
+        string path
+        string section
+        string mnemonic
+        string address
+        string operands
+    }
+    ELF_SECTIONS ||--o{ ELF_STRINGS : contains
+    ELF_STRINGS {
+        string path
+        string section
+        string value
+    }
 ```
 
 ## Installation
