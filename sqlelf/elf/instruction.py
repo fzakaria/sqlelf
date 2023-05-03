@@ -19,14 +19,16 @@ def elf_instructions(binaries: list[lief.Binary]):
                     # keep in mind that producing details costs more memory,
                     # complicates the internal operations and slows down
                     # the engine a bit, so only do that if needed.
-                    md.detail = True
-                    for instruction in md.disasm(data, section.virtual_address):
+                    md.detail = False
+                    for (address, size, mnemonic, op_str) in md.disasm_lite(
+                        data, section.virtual_address
+                    ):
                         yield {
                             "path": binary.name,
                             "section": section.name,
-                            "mnemonic": instruction.mnemonic,
-                            "address": instruction.address,
-                            "operands": instruction.op_str,
+                            "mnemonic": mnemonic,
+                            "address": address,
+                            "operands": op_str,
                         }
 
     return generator
