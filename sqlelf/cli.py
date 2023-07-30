@@ -1,6 +1,5 @@
 import argparse
 import os
-import tempfile
 from functools import reduce
 
 import apsw
@@ -44,8 +43,7 @@ def start():
     # forward sqlite logs to logging module
     apsw.ext.log_sqlite()
     # Now we create the connection
-    databse_path = os.path.join(tempfile.mkdtemp(), "database")
-    connection = apsw.Connection(databse_path)
+    connection = apsw.Connection(":memory:")
     header.register(connection, binaries)
     section.register(connection, binaries)
     symbol.register(connection, binaries)
