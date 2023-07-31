@@ -11,9 +11,12 @@ import lief
 def elf_sections(binaries: list[lief.Binary]):
     def generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.name
             for section in binary.sections:
                 yield {
-                    "path": binary.name,
+                    "path": binary_name,
                     "name": section.name,
                     "offset": section.offset,
                     "size": section.size,
