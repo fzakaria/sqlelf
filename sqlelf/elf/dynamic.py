@@ -13,8 +13,11 @@ import lief
 def elf_dynamic_entries(binaries: list[lief.Binary]):
     def generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.name
             for entry in binary.dynamic_entries:
-                yield {"path": binary.name, "tag": entry.tag.name, "value": entry.value}
+                yield {"path": binary_name, "tag": entry.tag.name, "value": entry.value}
 
     return generator
 

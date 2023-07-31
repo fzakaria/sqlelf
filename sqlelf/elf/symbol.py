@@ -11,9 +11,12 @@ import lief
 def elf_symbols(binaries: list[lief.Binary]):
     def generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.name
             for symbol in binary.symbols:
                 yield {
-                    "path": binary.name,
+                    "path": binary_name,
                     "name": symbol.name,
                     "demangled_name": symbol.demangled_name,
                     # A bit of detailed explanation here to explain these values.

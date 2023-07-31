@@ -12,6 +12,10 @@ import lief
 def elf_instructions(binaries: list[lief.Binary]):
     def generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.name
+
             for section in binary.sections:
                 if section.has(lief.ELF.SECTION_FLAGS.EXECINSTR):
                     data = bytes(section.content)
@@ -20,12 +24,16 @@ def elf_instructions(binaries: list[lief.Binary]):
                     # complicates the internal operations and slows down
                     # the engine a bit, so only do that if needed.
                     md.detail = False
+
+                    # super important that these accessors are pulled out
+                    # of the tight loop as they can be costly
+                    section_name = section.name
                     for (address, size, mnemonic, op_str) in md.disasm_lite(
                         data, section.virtual_address
                     ):
                         yield {
-                            "path": binary.name,
-                            "section": section.name,
+                            "path": binary_name,
+                            "section": section_name,
                             "mnemonic": mnemonic,
                             "address": address,
                             "operands": op_str,

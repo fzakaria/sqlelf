@@ -16,13 +16,16 @@ def elf_strings(binaries: list[lief.Binary]):
                 for section in binary.sections
                 if section.type == lief.ELF.SECTION_TYPES.STRTAB
             ]
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.name
             for strtab in strtabs:
                 # The first byte is always the null byte in the STRTAB
                 # Python also treats the final null in the string by creating
                 # an empty item so we chop it off.
                 # https://stackoverflow.com/a/18970869
                 for string in str(strtab.content[1:-1], "utf-8").split("\x00"):
-                    yield {"path": binary.name, "section": strtab.name, "value": string}
+                    yield {"path": binary_name, "section": strtab.name, "value": string}
 
     return generator
 
