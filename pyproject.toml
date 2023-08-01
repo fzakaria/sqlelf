@@ -4,21 +4,21 @@ version = "0.0.1"
 authors = [ 
     { name = "Farid Zakaria", email = "farid.m.zakaria@gmail.com" }, 
 ]
+readme = "README.md"
 description = "Explore ELF objects through the power of SQL"
-license = { text = "MIT" }
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dependencies = [
     "apsw",
     "lief",
+    "capstone",
 ]
 
 [project.scripts]
 sqlelf = "sqlelf.cli:start"
 
 [tool.setuptools]
-py-modules = [
-    "sqlelf"
-]
+packages = ["sqlelf", "sqlelf.elf"]
 
 [tool.pyright]
 include = ["sqlelf"]
