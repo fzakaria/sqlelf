@@ -4,27 +4,24 @@
 # We bump it here but it also closely follows sqlite so we had to bump
 # that as well.
 let
-  sqlite-3411 = pkgs.sqlite.overrideAttrs (oldAttrs: rec {
-    version = "3.41.1";
+  sqlite-3430 = pkgs.sqlite.overrideAttrs (oldAttrs: rec {
+    version = "3.43.0";
     src = pkgs.fetchurl {
-      url = "https://sqlite.org/2023/sqlite-autoconf-3410100.tar.gz";
-      sha256 = "sha256-Ta376rn44WxpXU+7xRwWsvd/uX/0wcPROZGd/AOMnjM=";
+      url = "https://sqlite.org/2023/sqlite-autoconf-3430000.tar.gz";
+      sha256 = "sha256-SQCNvzr8BNTtyOz8NOTq0ZaXMDQpPJl62tL2PwF2KuE=";
     };
   });
   pythonPackageOverrides = self: super: {
     apsw = super.apsw.overridePythonAttrs (oldAttrs: rec {
-      version = "3.41.0.1";
+      version = "3.43.0.0";
       src = pkgs.fetchFromGitHub {
         owner = "rogerbinns";
         repo = "apsw";
-        # Use this custom commit with a fix for JOIN virtual table
-        # until the next release
-        rev = "ef2487eb5dcb75d2350fc91cb931ac4b196442a8";
-        # rev = "refs/tags/${version}";
-        sha256 = "sha256-xkFdTXARCP9RsrIJ/ZnlQwJo6g6mwWsH5WUHK0W7dkY=";
+        rev = "refs/tags/${version}";
+        sha256 = "sha256-e5glVSAuHElDAarF7xvasBq8UY7n/J5bb3zSjT4fTuA=";
       };
       buildInputs = [
-        sqlite-3411
+        sqlite-3430
       ];
     });
   };

@@ -28,7 +28,7 @@ def elf_instructions(binaries: list[lief.Binary]):
                     # super important that these accessors are pulled out
                     # of the tight loop as they can be costly
                     section_name = section.name
-                    for (address, size, mnemonic, op_str) in md.disasm_lite(
+                    for address, size, mnemonic, op_str in md.disasm_lite(
                         data, section.virtual_address
                     ):
                         yield {

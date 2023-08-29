@@ -3,7 +3,7 @@ import os
 from functools import reduce
 
 import apsw
-import apsw.ext
+import apsw.bestpractice
 import apsw.shell
 import lief
 
@@ -41,7 +41,8 @@ def start():
     binaries: list[lief.Binary] = [lief.parse(filename) for filename in filenames]
 
     # forward sqlite logs to logging module
-    apsw.ext.log_sqlite()
+    apsw.bestpractice.apply(apsw.bestpractice.recommended)
+
     # Now we create the connection
     connection = apsw.Connection(":memory:")
     header.register(connection, binaries)
