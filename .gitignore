@@ -5,3 +5,5 @@ devenv.local.nix
 .direnv/
 sqlelf.egg-info/
 *.pyc
+.vscode/
+dist/
