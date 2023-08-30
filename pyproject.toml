@@ -11,6 +11,11 @@ python = ">=3.10"
 capstone = "^5.0.1"
 lief = "^0.13.2"
 apsw = "^3.43.0.0"
+# TODO(fzakaria): Would love to specify this as an exact version
+# but I was getting weird failures with `nix build`
+# ERROR: Could not find a version that satisfies the requirement setuptools<61.0.0,>=60.0.0 (from sqlelf) (from versions: none)
+# ERROR: No matching distribution found for setuptools<61.0.0,>=60.0.0
+setuptools = "*"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.7.0"
@@ -27,10 +32,6 @@ sqlelf = "sqlelf.cli:start"
 [tool.isort]
 skip = [".git", "result"]
 profile = "black"
-
-[tool.flake8]
-extend-ignore = "E203"
-max-line-length = 88
 
 [tool.pytest.ini_options]
 addopts = ""

@@ -26,7 +26,7 @@ def start():
     args = parser.parse_args()
 
     # Iterate through our arguments and if one of them is a directory explode it out
-    filenames = reduce(
+    filenames: list[str] = reduce(
         lambda a, b: a + b,
         map(
             lambda dir: [os.path.join(dir, f) for f in os.listdir(dir)]

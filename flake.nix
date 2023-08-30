@@ -19,13 +19,14 @@
           inherit system;
           overlays = [ poetry2nix.overlay (import ./overlay.nix) ];
         };
-      in {
+      in
+      {
         packages = {
           sqlelf = pkgs.sqlelf;
           default = pkgs.sqlelf;
         };
 
         devShell = pkgs.sqlelf-env.env.overrideAttrs
-          (oldAttrs: { buildInputs = [ pkgs.poetry pkgs.sqlite ]; });
+          (oldAttrs: { buildInputs = with pkgs; [ poetry pyright nixpkgs-fmt ]; });
       });
 }

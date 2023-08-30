@@ -7,3 +7,4 @@ sqlelf.egg-info/
 *.pyc
 .vscode/
 dist/
+result
