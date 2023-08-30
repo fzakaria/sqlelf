@@ -16,7 +16,7 @@ def elf_dynamic_entries(binaries: list[lief.Binary]):
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
             binary_name = binary.name
-            for entry in binary.dynamic_entries:
+            for entry in binary.dynamic_entries:  # pyright: ignore
                 yield {"path": binary_name, "tag": entry.tag.name, "value": entry.value}
 
     return generator

@@ -1,30 +1,44 @@
-[project]
+[tool.poetry]
 name = "sqlelf"
 version = "0.0.1"
-authors = [ 
-    { name = "Farid Zakaria", email = "farid.m.zakaria@gmail.com" }, 
-]
+authors = ["Farid Zakaria <farid.m.zakaria@gmail.com>"]
 readme = "README.md"
 description = "Explore ELF objects through the power of SQL"
-license = { file = "LICENSE" }
-requires-python = ">=3.10"
-dependencies = [
-    "apsw",
-    "lief",
-    "capstone",
-]
+license = "LICENSE"
 
-[project.scripts]
+[tool.poetry.dependencies]
+python = ">=3.10"
+capstone = "^5.0.1"
+lief = "^0.13.2"
+apsw = "^3.43.0.0"
+# TODO(fzakaria): Would love to specify this as an exact version
+# but I was getting weird failures with `nix build`
+# ERROR: Could not find a version that satisfies the requirement setuptools<61.0.0,>=60.0.0 (from sqlelf) (from versions: none)
+# ERROR: No matching distribution found for setuptools<61.0.0,>=60.0.0
+setuptools = "*"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.7.0"
+isort = "^5.12.0"
+flake8 = "^6.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
 sqlelf = "sqlelf.cli:start"
 
-[tool.setuptools]
-packages = ["sqlelf", "sqlelf.elf"]
+[tool.isort]
+skip = [".git", "result"]
+profile = "black"
+
+[tool.pytest.ini_options]
+addopts = ""
 
 [tool.pyright]
 include = ["sqlelf"]
-exclude = [
-    "**/__pycache__",
-]
+exclude = ["**/__pycache__"]
 
 reportMissingImports = true
 reportMissingTypeStubs = true
