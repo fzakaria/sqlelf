@@ -1,6 +1,9 @@
 # sqlelf
 
 ![example workflow](https://github.com/fzakaria/sqlelf/actions/workflows/main.yml/badge.svg)
+[![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
+
+> Explore ELF objects through the power of SQL
 
 A tool that utilizes SQLite's virtual table functionality to allow you to explore Linux ELF objects through SQL.
 
@@ -64,17 +67,21 @@ erDiagram
 ```
 
 ## Installation
-This repository can easily be installed via source, you simply need to have [Nix or NixOS](https://nixos.org) installed.
-
-Afterwards utilizing [devenv](https://devenv.sh/) you can enter a shell with all the dependencies provided.
+This repository can easily be installed, you simply need to have [Nix or NixOS](https://nixos.org) installed.
 
 ```console
-❯ devenv shell
-Building shell ...
-Entering shell ...
+❯ nix run github:fzakaria/sqlelf /usr/bin/python3 -- \
+--sql "select mnemonic, COUNT(*) from elf_instructions GROUP BY mnemonic ORDER BY 2 DESC LIMIT 3"
 
-❯ pip install --editable .
-❯ sqlelf --help
+mov|223497
+call|56209
+jmp|48213
+```
+
+Note: I publish artifacts to [cachix](https://cachix.org/) that you can use to develop faster.
+
+```console
+> cachix use fzakaria
 ```
 
 ## Usage
@@ -130,4 +137,23 @@ path|num_sections
 /bin/ls|31
 /usr/bin/pnmarith|27
 /usr/bin/ruby|28
+```
+
+## Development
+
+You must have [Nix](https://nixos.org) installed for development.
+
+This package uses [poetry2nix](https://github.com/nix-community/poetry2nix) to easily setup a development environment.
+
+```console
+❯ nix develop
+$ sqlelf --help
+usage: sqlelf [-h] [-s SQL] FILE [FILE ...]
+```
+
+A helping `Makefile` is provided to run all the _linters_ and _formatters_.
+
+```console
+> make lint
+> make fmt
 ```
