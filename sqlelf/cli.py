@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 from functools import reduce
 
 import apsw
@@ -10,7 +11,14 @@ import lief
 from .elf import dynamic, header, instruction, section, strings, symbol
 
 
-def start():
+def start(args=sys.argv[1:], stdin=sys.stdin):
+    """
+    Start the main CLI
+
+    Args:
+        args: the command line arguments to parse
+        stdin: the stdin to use if invoking the shell
+    """
     parser = argparse.ArgumentParser(
         prog="sqlelf",
         description="Analyze ELF files with the power of SQL",
@@ -23,7 +31,7 @@ def start():
         "-s", "--sql", help="Potential SQL to execute. Omitting this enters the REPL."
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     # Iterate through our arguments and if one of them is a directory explode it out
     filenames: list[str] = reduce(
@@ -52,7 +60,7 @@ def start():
     strings.register(connection, binaries)
     instruction.register(connection, binaries)
 
-    shell = apsw.shell.Shell(db=connection)
+    shell = apsw.shell.Shell(db=connection, stdin=stdin)
 
     if args.sql:
         shell.process_complete_line(args.sql)

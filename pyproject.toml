@@ -22,6 +22,7 @@ black = "^23.7.0"
 isort = "^5.12.0"
 flake8 = "^6.1.0"
 pyright = "^1.1.325"
+pytest = "^7.4.0"
 
 [build-system]
 requires = ["poetry-core"]

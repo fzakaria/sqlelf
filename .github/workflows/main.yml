@@ -19,5 +19,6 @@ jobs:
         name: fzakaria
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - run: nix develop --command make lint
+    - run: nix develop --command make test
     - run: nix build --print-build-logs
     - run: nix run . -- --help
