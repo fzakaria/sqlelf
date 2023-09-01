@@ -6,6 +6,7 @@ from typing import Any, Iterator
 import apsw
 import apsw.ext
 import lief
+
 from ..elf.section import section_name as elf_section_name
 
 
@@ -59,5 +60,6 @@ def register(connection: apsw.Connection, binaries: list[lief.Binary]):
         """
         CREATE TEMP TABLE elf_symbols
         AS SELECT * FROM raw_elf_symbols;
+        CREATE INDEX elf_symbols_name_idx ON elf_symbols (name);
         """
     )
