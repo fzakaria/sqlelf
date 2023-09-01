@@ -27,6 +27,12 @@ def elf_sections(binaries: list[lief.Binary]):
     return generator
 
 
+def section_name(name: str | None) -> str | None:
+    if name == "":
+        return "undefined"
+    return name
+
+
 def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator = elf_sections(binaries)
     # setup columns and access by providing an example of the first entry returned
