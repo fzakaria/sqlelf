@@ -6,6 +6,7 @@ from typing import Any, Iterator
 import apsw
 import apsw.ext
 import lief
+from ..elf.section import section_name as elf_section_name
 
 
 def elf_symbols(binaries: list[lief.Binary]):
@@ -15,6 +16,16 @@ def elf_symbols(binaries: list[lief.Binary]):
             # as they can be costly
             binary_name = binary.name
             for symbol in binary.symbols:
+                # The section index can be special numbers like 65521 or 65522
+                # that refer to special sections so they can't be indexed
+                section_name: str | None = next(
+                    (
+                        section.name
+                        for shndx, section in enumerate(binary.sections)
+                        if shndx == symbol.shndx
+                    ),
+                    None,
+                )
                 yield {
                     "path": binary_name,
                     "name": symbol.name,
@@ -30,7 +41,7 @@ def elf_symbols(binaries: list[lief.Binary]):
                     # https://www.m4b.io/elf/export/binary/analysis/2015/05/25/what-is-an-elf-export.html
                     "imported": symbol.imported,
                     "exported": symbol.exported,
-                    "section": binary.sections[symbol.shndx].name,
+                    "section": elf_section_name(section_name),
                     "size": symbol.size,
                 }
 
@@ -43,4 +54,10 @@ def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator.columns, generator.column_access = apsw.ext.get_column_names(
         next(generator())
     )
-    apsw.ext.make_virtual_module(connection, "elf_symbols", generator)
+    apsw.ext.make_virtual_module(connection, "raw_elf_symbols", generator)
+    connection.execute(
+        """
+        CREATE TEMP TABLE elf_symbols
+        AS SELECT * FROM raw_elf_symbols;
+        """
+    )

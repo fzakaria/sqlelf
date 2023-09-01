@@ -27,6 +27,6 @@
         };
 
         devShell = pkgs.sqlelf-env.env.overrideAttrs
-          (oldAttrs: { buildInputs = with pkgs; [ poetry pyright nixpkgs-fmt ]; });
+          (oldAttrs: { buildInputs = with pkgs; [ poetry nixpkgs-fmt ]; });
       });
 }

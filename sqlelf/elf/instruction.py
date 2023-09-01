@@ -63,4 +63,10 @@ def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator.columns, generator.column_access = apsw.ext.get_column_names(
         next(generator())
     )
-    apsw.ext.make_virtual_module(connection, "elf_instructions", generator)
+    apsw.ext.make_virtual_module(connection, "raw_elf_instructions", generator)
+    connection.execute(
+        """
+        CREATE TEMP TABLE elf_instructions
+        AS SELECT * FROM raw_elf_instructions;
+        """
+    )

@@ -23,5 +23,7 @@ fmt:              ## Format code using black & isort.
 lint:             ## Run pep8, black, mypy linters.
 	flake8 sqlelf/
 	black --check sqlelf/
-	pyright
+# TODO(fzakaria): without pythonpath it picks up the wrong python
+# and then does not find the venv for the imports
+	pyright --pythonpath $(shell which python)
 	nixpkgs-fmt --check .
