@@ -27,3 +27,7 @@ lint:             ## Run pep8, black, mypy linters.
 # and then does not find the venv for the imports
 	pyright --pythonpath $(shell which python)
 	nixpkgs-fmt --check .
+
+.PHONY: test
+test:             ## Run pytest primarily.
+	pytest
