@@ -7,7 +7,7 @@ description = "Explore ELF objects through the power of SQL"
 license = "LICENSE"
 
 [tool.poetry.dependencies]
-python = ">=3.10"
+python = ">=3.10,<4.0"
 capstone = "^5.0.1"
 lief = "^0.13.2"
 apsw = "^3.43.0.0"
@@ -16,6 +16,7 @@ apsw = "^3.43.0.0"
 # ERROR: Could not find a version that satisfies the requirement setuptools<61.0.0,>=60.0.0 (from sqlelf) (from versions: none)
 # ERROR: No matching distribution found for setuptools<61.0.0,>=60.0.0
 setuptools = "*"
+sh = "^2.0.6"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.7.0"
