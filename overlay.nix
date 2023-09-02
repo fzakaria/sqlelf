@@ -17,6 +17,9 @@ self: super: {
   });
 
   poetryOverrides = self: super: {
+    sh = super.sh.overridePythonAttrs (old: {
+      buildInputs = (old.buildInputs or [ ]) ++ [ super.poetry ];
+    });
     apsw = super.apsw.overridePythonAttrs (old: rec {
       version = "3.43.0.0";
       src = super.pkgs.fetchFromGitHub {

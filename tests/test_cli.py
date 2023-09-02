@@ -14,6 +14,9 @@ def test_cli_single_file_arguments():
     stdin = StringIO("")
     cli.start(["/bin/ls"], stdin)
 
+def test_cli_single_non_existent_file_arguments():
+    cli.start(["does_not_exist"])
+
 def test_cli_prompt_single_file_arguments():
     stdin = StringIO(".exit 56\n")
     with pytest.raises(SystemExit) as err:

@@ -7,8 +7,7 @@ import apsw
 import apsw.ext
 
 # TODO(fzkakaria): https://github.com/capstone-engine/capstone/issues/1993
-# pyright: reportMissingTypeStubs=false
-import capstone
+import capstone  # pyright: ignore
 import lief
 
 
