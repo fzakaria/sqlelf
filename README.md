@@ -142,6 +142,16 @@ path|num_sections
 /usr/bin/ruby|28
 ```
 
+You can provide _multiple SQL_ statements to the CLI. This is useful if you want to invoke many of the special _dot_ commands. You can use `.help` to see the list of possible commands or refer to the [apsw shell documentation](https://rogerbinns.github.io/apsw/shell.html).
+
+For instance, to have _sqelf_ emit JSON you can do the following:
+```console
+❯ sqlelf /usr/bin/ruby --sql ".mode json" --sql "select path,name from elf_sections LIMIT 3;"
+{ "path": "\/usr\/bin\/ruby", "name": ""},
+{ "path": "\/usr\/bin\/ruby", "name": ".interp"},
+{ "path": "\/usr\/bin\/ruby", "name": ".note.gnu.property"},
+```
+
 ### Queries
 
 #### List all symbol resolutions

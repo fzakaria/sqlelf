@@ -31,7 +31,10 @@ def start(args=sys.argv[1:], stdin=sys.stdin):
         "filenames", nargs="+", metavar="FILE", help="The ELF file to analyze"
     )
     parser.add_argument(
-        "-s", "--sql", help="Potential SQL to execute. Omitting this enters the REPL."
+        "-s",
+        "--sql",
+        action="append",
+        help="Potential SQL to execute. Omitting this enters the REPL.",
     )
     parser.add_argument(
         "--recursive",
@@ -83,6 +86,7 @@ def start(args=sys.argv[1:], stdin=sys.stdin):
     shell = apsw.shell.Shell(db=connection, stdin=stdin)
 
     if args.sql:
-        shell.process_complete_line(args.sql)
+        for sql in args.sql:
+            shell.process_complete_line(sql)
     else:
         shell.cmdloop()
