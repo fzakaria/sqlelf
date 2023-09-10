@@ -67,9 +67,16 @@ def start(args=sys.argv[1:], stdin=sys.stdin):
     # the binary would load as well.
     if args.recursive:
         shared_libraries = [ldd.libraries(binary).values() for binary in binaries]
-        binaries = binaries + [
-            lief.parse(library) for sub_list in shared_libraries for library in sub_list
-        ]
+        # We want to readlink on the libraries to resolve symlinks such as libm -> libc
+        # also make this is a set in the case that multiple binaries use the same
+        shared_libraries = set(
+            [
+                os.path.realpath(library)
+                for sub_list in shared_libraries
+                for library in sub_list
+            ]
+        )
+        binaries = binaries + [lief.parse(library) for library in shared_libraries]
 
     # forward sqlite logs to logging module
     apsw.bestpractice.apply(apsw.bestpractice.recommended)
@@ -84,6 +91,7 @@ def start(args=sys.argv[1:], stdin=sys.stdin):
     instruction.register(connection, binaries)
 
     shell = apsw.shell.Shell(db=connection, stdin=stdin)
+    shell.command_prompt(["sqlelf> "])
 
     if args.sql:
         for sql in args.sql:

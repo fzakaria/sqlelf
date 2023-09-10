@@ -44,6 +44,11 @@ def elf_symbols(binaries: list[lief.Binary]):
                     "exported": symbol.exported,
                     "section": elf_section_name(section_name),
                     "size": symbol.size,
+                    # TODO(fzakaria): Better understand why is it auxiliary?
+                    # this returns versions like GLIBC_2.2.5
+                    "version": symbol.symbol_version.symbol_version_auxiliary.name
+                    if symbol.symbol_version.symbol_version_auxiliary
+                    else None,
                 }
 
     return generator
