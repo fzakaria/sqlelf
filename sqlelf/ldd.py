@@ -2,14 +2,15 @@ import re
 from collections import OrderedDict
 from typing import Dict
 
-import lief
 import sh  # pyright: ignore
 
+from sqlelf.elf.binary import Binary
 
-def libraries(binary: lief.Binary) -> Dict[str, str]:
+
+def libraries(binary: Binary) -> Dict[str, str]:
     """Use the interpreter in a binary to determine the path of each linked library"""
     interpreter = sh.Command(binary.interpreter)  # pyright: ignore
-    resolution = interpreter("--list", binary.name)
+    resolution = interpreter("--list", binary.path)
     result = OrderedDict()
     # TODO: Figure out why `--list` and `ldd` produce different outcomes
     # specifically for the interpreter.

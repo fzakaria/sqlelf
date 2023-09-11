@@ -3,7 +3,7 @@ self: super: {
   sqlelf = self.callPackage ./derivation.nix { };
 
   sqlelf-env = self.poetry2nix.mkPoetryEnv {
-    projectDir = ./.;
+    projectDir = ../.;
     overrides = self.poetry2nix.overrides.withDefaults self.poetryOverrides;
     editablePackageSources = { sqlelf = ./sqlelf; };
   };
@@ -16,10 +16,16 @@ self: super: {
     };
   });
 
+
+  lief-3414ded = self.callPackage ./lief.nix { python = self.python3; };
+
   poetryOverrides = self: super: {
+    lief = super.toPythonModule super.pkgs.lief-3414ded.py;
+
     sh = super.sh.overridePythonAttrs (old: {
       buildInputs = (old.buildInputs or [ ]) ++ [ super.poetry ];
     });
+
     apsw = super.apsw.overridePythonAttrs (old: rec {
       version = "3.43.0.0";
       src = super.pkgs.fetchFromGitHub {

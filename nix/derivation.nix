@@ -1,5 +1,5 @@
 { poetry2nix, poetryOverrides }:
 poetry2nix.mkPoetryApplication {
-  projectDir = ./.;
+  projectDir = ../.;
   overrides = poetry2nix.overrides.withDefaults poetryOverrides;
 }
