@@ -9,7 +9,7 @@ license = "LICENSE"
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
 capstone = "^5.0.1"
-lief = "^0.13.2"
+lief = ">=0.13.2"
 apsw = "^3.43.0.0"
 # TODO(fzakaria): Would love to specify this as an exact version
 # but I was getting weird failures with `nix build`
