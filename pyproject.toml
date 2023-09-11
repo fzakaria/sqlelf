@@ -40,7 +40,7 @@ profile = "black"
 addopts = ""
 
 [tool.pyright]
-include = ["sqlelf"]
+include = ["sqlelf", "tests"]
 exclude = ["**/__pycache__"]
 
 reportMissingImports = true

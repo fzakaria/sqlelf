@@ -1,16 +1,16 @@
 from sqlelf import ldd
-import lief
+from sqlelf.elf.binary import Binary
 from unittest.mock import patch
 
 def test_simple_binary_real():
-    binary = lief.parse("/bin/ls")
+    binary = Binary("/bin/ls")
     result = ldd.libraries(binary)
     assert len(result) > 0
 
 
 @patch("sh.Command")
 def test_simple_binary_mocked(Command):
-    binary = lief.parse("/bin/ls")
+    binary = Binary("/bin/ls")
     Command(binary.interpreter).return_value = """
     linux-vdso.so.1 (0x00007ffc5d8ff000)
 	/lib/x86_64-linux-gnu/libnss_cache.so.2 (0x00007f6995d92000)

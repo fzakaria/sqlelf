@@ -5,17 +5,17 @@ from typing import Any, Iterator
 
 import apsw
 import apsw.ext
-import lief
 
-from ..elf.section import section_name as elf_section_name
+from sqlelf.elf.binary import Binary
+from sqlelf.elf.section import section_name as elf_section_name
 
 
-def elf_symbols(binaries: list[lief.Binary]):
+def elf_symbols(binaries: list[Binary]):
     def generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_name = binary.name
+            binary_path = binary.path
             for symbol in binary.symbols:
                 # The section index can be special numbers like 65521 or 65522
                 # that refer to special sections so they can't be indexed
@@ -26,9 +26,10 @@ def elf_symbols(binaries: list[lief.Binary]):
                         if shndx == symbol.shndx
                     ),
                     None,
-                )
+                )  # pyright: ignore (https://github.com/lief-project/LIEF/issues/965)
+
                 yield {
-                    "path": binary_name,
+                    "path": binary_path,
                     "name": symbol.name,
                     "demangled_name": symbol.demangled_name,
                     # A bit of detailed explanation here to explain these values.
@@ -47,14 +48,15 @@ def elf_symbols(binaries: list[lief.Binary]):
                     # TODO(fzakaria): Better understand why is it auxiliary?
                     # this returns versions like GLIBC_2.2.5
                     "version": symbol.symbol_version.symbol_version_auxiliary.name
-                    if symbol.symbol_version.symbol_version_auxiliary
+                    if symbol.symbol_version
+                    and symbol.symbol_version.symbol_version_auxiliary
                     else None,
                 }
 
     return generator
 
 
-def register(connection: apsw.Connection, binaries: list[lief.Binary]):
+def register(connection: apsw.Connection, binaries: list[Binary]):
     generator = elf_symbols(binaries)
     # setup columns and access by providing an example of the first entry returned
     generator.columns, generator.column_access = apsw.ext.get_column_names(
