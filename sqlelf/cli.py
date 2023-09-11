@@ -60,7 +60,7 @@ def start(args=sys.argv[1:], stdin=sys.stdin):
 
     # If none of the inputs are valid files, simply return
     if len(filenames) == 0:
-        return
+        sys.exit("No valid ELF files were provided")
 
     binaries: list[Binary] = [Binary(filename) for filename in filenames]
 

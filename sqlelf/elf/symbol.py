@@ -5,6 +5,7 @@ from typing import Any, Iterator
 
 import apsw
 import apsw.ext
+import lief
 
 from sqlelf.elf.binary import Binary
 from sqlelf.elf.section import section_name as elf_section_name
@@ -16,7 +17,7 @@ def elf_symbols(binaries: list[Binary]):
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
             binary_path = binary.path
-            for symbol in binary.symbols:
+            for symbol in symbols(binary):
                 # The section index can be special numbers like 65521 or 65522
                 # that refer to special sections so they can't be indexed
                 section_name: str | None = next(
@@ -54,6 +55,25 @@ def elf_symbols(binaries: list[Binary]):
                 }
 
     return generator
+
+
+def symbols(binary: Binary) -> Iterator[lief.ELF.Symbol]:
+    """Use heuristic to either get static symbols or dynamic symbol table
+
+    The static symbol table is a superset of the dynamic symbol table.
+    However it is often stripped from binaries as it's not needed beyond
+    debugging.
+
+    This method uses the simplest heuristic of checking for it's existence
+    to return the static symbol table.
+
+    A bad actor is free to strip arbitrarily from the static symbol table
+    and it would affect this method.
+    """
+    static_symbols = binary.static_symbols
+    if len(static_symbols) > 0:
+        return static_symbols
+    return binary.dynamic_symbols
 
 
 def register(connection: apsw.Connection, binaries: list[Binary]):

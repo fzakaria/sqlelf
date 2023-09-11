@@ -8,3 +8,5 @@ sqlelf.egg-info/
 .vscode/
 dist/
 result
+examples/shadowed-symbols/exe
+examples/**/*.so
