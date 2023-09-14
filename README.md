@@ -221,6 +221,32 @@ HAVING count(*) >= 2;"
 ```
 </details>
 
+<details>
+<summary> List contained symbols, i.e. a symbol fully within the bounds of another</summary>
+
+```console
+sqlelf ./examples/nested-symbols/exe --sql "
+SELECT outer_symbol.path, 
+    outer_symbol.name AS outer_symbol_name, 
+    inner_symbol.name AS inner_symbol_name
+FROM 
+    elf_symbols AS outer_symbol, 
+    elf_symbols AS inner_symbol
+WHERE
+    inner_symbol.section = '.text' AND
+    outer_symbol.section = '.text' AND
+    inner_symbol.path = outer_symbol.path AND
+    inner_symbol.value > outer_symbol.value AND
+    (inner_symbol.value + inner_symbol.size) < (outer_symbol.value + outer_symbol.size) AND
+    inner_symbol.name != outer_symbol.name LIMIT 5;"
+┌──────────────────────────────────┬───────────────────┬───────────────────┐
+│               path               │ outer_symbol_name │ inner_symbol_name │
+│ ./examples/nested-symbols/nested │ outer_function    │ inner_symbol      │
+└──────────────────────────────────┴───────────────────┴───────────────────┘
+```
+
+</details>
+
 ## Development
 
 You must have [Nix](https://nixos.org) installed for development.
