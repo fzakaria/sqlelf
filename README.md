@@ -154,7 +154,8 @@ For instance, to have _sqelf_ emit JSON you can do the following:
 
 ### Queries
 
-#### List all symbol resolutions
+<details>
+<summary>List all symbol resolutions (match import & export)</summary>
 
 ```console
 ❯ sqlelf /usr/bin/ruby --sql "SELECT caller.path as 'caller.path',
@@ -198,8 +199,7 @@ LIMIT 25;"
 │ /lib/x86_64-linux-gnu/libruby-3.1.so.3.1 │ /lib/x86_64-linux-gnu/libm.so.6          │ atan2                │ atan2                │
 └──────────────────────────────────────────┴──────────────────────────────────────────┴──────────────────────┴──────────────────────┘
 ```
-
-## Symbol Aliasing
+</details>
 
 <details>
 <summary>Find symbols that are exported by more than one library</summary>
