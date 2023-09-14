@@ -27,12 +27,12 @@ self: super: {
     });
 
     apsw = super.apsw.overridePythonAttrs (old: rec {
-      version = "3.43.0.0";
+      version = "3.43.1.0";
       src = super.pkgs.fetchFromGitHub {
         owner = "rogerbinns";
         repo = "apsw";
         rev = "refs/tags/${version}";
-        sha256 = "sha256-e5glVSAuHElDAarF7xvasBq8UY7n/J5bb3zSjT4fTuA=";
+        sha256 = "sha256-x+bSft37DgF2tXXCL6ac86g1+mj/wJeDLoCSiVSXedA=";
       };
       buildInputs = (old.buildInputs or [ ]) ++ [ super.pkgs.sqlite-3430 ];
     });

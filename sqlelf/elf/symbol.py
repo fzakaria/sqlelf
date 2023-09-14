@@ -52,6 +52,8 @@ def elf_symbols(binaries: list[Binary]):
                     if symbol.symbol_version
                     and symbol.symbol_version.symbol_version_auxiliary
                     else None,
+                    "type": symbol.type.__name__,
+                    "value": symbol.value,
                 }
 
     return generator
@@ -87,6 +89,7 @@ def register(connection: apsw.Connection, binaries: list[Binary]):
         """
         CREATE TEMP TABLE elf_symbols
         AS SELECT * FROM raw_elf_symbols;
+        CREATE INDEX elf_symbols_path_idx ON elf_symbols (path);
         CREATE INDEX elf_symbols_name_idx ON elf_symbols (name);
         """
     )
