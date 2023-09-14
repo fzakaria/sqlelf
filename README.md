@@ -199,6 +199,28 @@ LIMIT 25;"
 └──────────────────────────────────────────┴──────────────────────────────────────────┴──────────────────────┴──────────────────────┘
 ```
 
+## Symbol Aliasing
+
+<details>
+<summary>Find symbols that are exported by more than one library</summary>
+
+```console
+❯ sqlelf ./examples/shadowed-symbols/exe --recursive --sql "
+SELECT name, version, count(*) as symbol_count, GROUP_CONCAT(path, ':') as libraries
+FROM elf_symbols
+WHERE exported = TRUE
+GROUP BY name, version
+HAVING count(*) >= 2;"
+┌──────┬────────┬───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ name │ versio │ symbol_co │                                                                       libraries                                                                        │
+│      │   n    │    unt    │                                                                                                                                                        │
+├──────┼────────┼───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ foo  │ NULL   │ 2         │ /usr/local/google/home/fmzakari/code/github.com/fzakaria/sqlelf/examples/shadowed-                                                                     │
+│      │        │           │ symbols/x/libx.so:/usr/local/google/home/fmzakari/code/github.com/fzakaria/sqlelf/examples/shadowed-symbols/x/libx2.so                                 │
+└──────┴────────┴───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+</details>
+
 ## Development
 
 You must have [Nix](https://nixos.org) installed for development.
