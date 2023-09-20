@@ -2,25 +2,24 @@ from typing import Any, Iterator
 
 import apsw
 import apsw.ext
+import lief
 
-from sqlelf.elf.binary import Binary
 
-
-def elf_headers(binaries: list[Binary]):
+def elf_headers(binaries: list[lief.Binary]):
     def generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             yield {
-                "path": binary.path,
-                "type": binary.header.file_type.__name__,
-                "machine": binary.header.machine_type.__name__,
-                "version": binary.header.identity_version.__name__,
+                "path": binary.name,
+                "type": binary.header.file_type.name,
+                "machine": binary.header.machine_type.name,
+                "version": binary.header.identity_version.name,
                 "entry": binary.header.entrypoint,
             }
 
     return generator
 
 
-def register(connection: apsw.Connection, binaries: list[Binary]):
+def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator = elf_headers(binaries)
     # setup columns and access by providing an example of the first entry returned
     generator.columns, generator.column_access = apsw.ext.get_column_names(

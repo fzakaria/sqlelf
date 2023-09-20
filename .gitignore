@@ -10,3 +10,5 @@ dist/
 result
 examples/**/exe
 examples/**/*.so
+venv/
+temp/

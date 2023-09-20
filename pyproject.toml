@@ -1,38 +1,36 @@
-[tool.poetry]
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
 name = "sqlelf"
 version = "0.0.1"
-authors = ["Farid Zakaria <farid.m.zakaria@gmail.com>"]
+authors = [{ name = "Farid Zakaria", email = "farid.m.zakaria@gmail.com" }]
 readme = "README.md"
 description = "Explore ELF objects through the power of SQL"
-license = "LICENSE"
+license = { file = "LICENSE" }
+requires-python = ">=3.10,<4.0"
 
-[tool.poetry.dependencies]
-python = ">=3.10,<4.0"
-capstone = "^5.0.1"
-# These two packages are being versioned using Nix
-# you will want to refer to ./nix/overlay.nix to see the exact versions
-# you cannot trust the versions in the poetry.lock file
-lief = ">=0.13.2"
-apsw = "^3.43.1.0"
-# TODO(fzakaria): Would love to specify this as an exact version
-# but I was getting weird failures with `nix build`
-# ERROR: Could not find a version that satisfies the requirement setuptools<61.0.0,>=60.0.0 (from sqlelf) (from versions: none)
-# ERROR: No matching distribution found for setuptools<61.0.0,>=60.0.0
-setuptools = "*"
-sh = "^2.0.6"
+dependencies = [
+    "capstone >= 5.0.1",
+    "lief >=0.13.2",
+    "apsw >= 3.43.1.0",
+    "sh >= 2.0.6",
+]
 
-[tool.poetry.group.dev.dependencies]
-black = "^23.7.0"
-isort = "^5.12.0"
-flake8 = "^6.1.0"
-pyright = "^1.1.325"
-pytest = "^7.4.0"
+[project.optional-dependencies]
+dev = [
+    "black >= 23.7.0",
+    "isort >= 5.12.0",
+    "flake8 >= 6.1.0",
+    "pyright >= 1.1.325",
+    "pytest >= 7.4.0",
+]
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.setuptools]
+packages = ["sqlelf"]
 
-[tool.poetry.scripts]
+[project.scripts]
 sqlelf = "sqlelf.cli:start"
 
 [tool.isort]
