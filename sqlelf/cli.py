@@ -4,13 +4,9 @@ import os.path
 import sys
 from functools import reduce
 
-import apsw
-import apsw.bestpractice
-import apsw.shell
 import lief
 
-from sqlelf import ldd
-from sqlelf.elf import dynamic, header, instruction, section, strings, symbol
+from sqlelf import sql as api_sql
 
 
 def start(args=sys.argv[1:], stdin=sys.stdin):
@@ -62,35 +58,8 @@ def start(args=sys.argv[1:], stdin=sys.stdin):
 
     binaries: list[lief.Binary] = [lief.parse(filename) for filename in filenames]
 
-    # If the recursive option is specidied, load the shared libraries
-    # the binary would load as well.
-    if args.recursive:
-        shared_libraries = [ldd.libraries(binary).values() for binary in binaries]
-        # We want to readlink on the libraries to resolve symlinks such as libm -> libc
-        # also make this is a set in the case that multiple binaries use the same
-        shared_libraries = set(
-            [
-                os.path.realpath(library)
-                for sub_list in shared_libraries
-                for library in sub_list
-            ]
-        )
-        binaries = binaries + [lief.parse(library) for library in shared_libraries]
-
-    # forward sqlite logs to logging module
-    apsw.bestpractice.apply(apsw.bestpractice.recommended)
-
-    # Now we create the connection
-    connection = apsw.Connection(":memory:")
-    header.register(connection, binaries)
-    section.register(connection, binaries)
-    symbol.register(connection, binaries)
-    dynamic.register(connection, binaries)
-    strings.register(connection, binaries)
-    instruction.register(connection, binaries)
-
-    shell = apsw.shell.Shell(db=connection, stdin=stdin)
-    shell.command_prompt(["sqlelf> "])
+    sql_engine = api_sql.SQLEngine(binaries, recursive=args.recursive)
+    shell = sql_engine.shell(stdin=stdin)
 
     if args.sql:
         for sql in args.sql:
