@@ -244,15 +244,15 @@ WHERE
 
 ## Development
 
+You may want to install the package in _editable mode_ as well to make development easier
+
+```console
+> pip install --editable ".[dev]"
+```
+
 A helping `Makefile` is provided to run all the _linters_ and _formatters_.
 
 ```console
 > make lint
 > make fmt
-```
-
-You may want to install the package in _editable mode_ as well to make development easier
-
-```console
-> pip install --editable ".[dev]"
 ```

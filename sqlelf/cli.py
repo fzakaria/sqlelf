@@ -50,7 +50,7 @@ def start(args=sys.argv[1:], stdin=sys.stdin):
         ),
     )
     # Filter the list of filenames to those that are ELF files only
-    filenames = list(filter(lambda f: os.path.isfile(f) and lief.is_elf(f), filenames))
+    filenames = [f for f in filenames if os.path.isfile(f) and lief.is_elf(f)]
 
     # If none of the inputs are valid files, simply return
     if len(filenames) == 0:
@@ -58,7 +58,7 @@ def start(args=sys.argv[1:], stdin=sys.stdin):
 
     binaries: list[lief.Binary] = [lief.parse(filename) for filename in filenames]
 
-    sql_engine = api_sql.SQLEngine(binaries, recursive=args.recursive)
+    sql_engine = api_sql.make_sql_engine(binaries, recursive=args.recursive)
     shell = sql_engine.shell(stdin=stdin)
 
     if args.sql:
