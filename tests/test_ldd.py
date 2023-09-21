@@ -1,6 +1,8 @@
-from sqlelf import ldd
-import lief
 from unittest.mock import patch
+
+import lief
+
+from sqlelf import ldd
 
 
 def test_simple_binary_real():
@@ -10,10 +12,10 @@ def test_simple_binary_real():
 
 
 @patch("sh.Command")
-def test_simple_binary_mocked(Command):
+def test_simple_binary_mocked(command):
     binary = lief.parse("/bin/ls")
     interpreter = binary.interpreter  # pyright: ignore
-    Command(
+    command(
         interpreter
     ).return_value = """
     linux-vdso.so.1 (0x00007ffc5d8ff000)
@@ -22,7 +24,7 @@ def test_simple_binary_mocked(Command):
     fake.so.6 => /some-path/fake.so.6
 	libc.so.6 => /nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib/libc.so.6 (0x00007f6995bac000)
 	/lib64/ld-linux-x86-64.so.2 => /nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib64/ld-linux-x86-64.so.2 (0x00007f6995dc1000)
-"""
+"""  # noqa: E501
     result = ldd.libraries(binary)
     assert len(result) == 4
     assert result["fake.so.6"] == "/some-path/fake.so.6"
@@ -30,10 +32,7 @@ def test_simple_binary_mocked(Command):
         result["/lib64/ld-linux-x86-64.so.2"]
         == "/nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib64/ld-linux-x86-64.so.2"
     )
-    assert (
-        result["libc.so.6"]
-        == "/nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib/libc.so.6"
-    )
+    assert result["libc.so.6"] == "/nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib/libc.so.6"
     # TODO(fzakaria):better handling for not found
     # kind of a weird one since this should never happen though
     assert result["libselinux.so.1"] == "not"

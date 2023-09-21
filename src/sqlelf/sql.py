@@ -10,8 +10,8 @@ from sqlelf import ldd
 from sqlelf.elf import dynamic, header, instruction, section, strings, symbol
 
 
-class SQLEngine(object):
-    def __init__(self, binaries: list[lief.Binary], recursive=False) -> None:
+class SQLEngine:
+    def __init__(self, binaries: list[lief.Binary], recursive) -> None:
         self.connection = apsw.Connection(":memory:")
 
         if recursive:
@@ -21,13 +21,7 @@ class SQLEngine(object):
             # We want to readlink on the libraries to resolve
             # symlinks such as libm -> libc
             # also make this is a set in the case that multiple binaries use the same
-            shared_libraries = set(
-                [
-                    os.path.realpath(library)
-                    for sub_list in shared_libraries
-                    for library in sub_list
-                ]
-            )
+            shared_libraries = {os.path.realpath(library) for sub_list in shared_libraries for library in sub_list}
             binaries = binaries + [lief.parse(library) for library in shared_libraries]
 
         header.register(self.connection, binaries)

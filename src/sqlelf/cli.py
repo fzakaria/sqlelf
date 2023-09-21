@@ -22,9 +22,7 @@ def start(args=sys.argv[1:], stdin=sys.stdin):
         description="Analyze ELF files with the power of SQL",
         epilog="Brought to you with ♥ by Farid Zakaria",
     )
-    parser.add_argument(
-        "filenames", nargs="+", metavar="FILE", help="The ELF file to analyze"
-    )
+    parser.add_argument("filenames", nargs="+", metavar="FILE", help="The ELF file to analyze")
     parser.add_argument(
         "-s",
         "--sql",
@@ -42,12 +40,7 @@ def start(args=sys.argv[1:], stdin=sys.stdin):
     # Iterate through our arguments and if one of them is a directory explode it out
     filenames: list[str] = reduce(
         lambda a, b: a + b,
-        map(
-            lambda dir: [os.path.join(dir, f) for f in os.listdir(dir)]
-            if os.path.isdir(dir)
-            else [dir],
-            args.filenames,
-        ),
+        ([os.path.join(d, f) for f in os.listdir(d)] if os.path.isdir(d) else [d] for d in args.filenames),
     )
     # Filter the list of filenames to those that are ELF files only
     filenames = list(filter(lambda f: os.path.isfile(f) and lief.is_elf(f), filenames))

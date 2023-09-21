@@ -1,6 +1,3 @@
-# Without this Python was complaining
-from __future__ import annotations
-
 from typing import Any, Iterator
 
 import apsw
@@ -20,11 +17,7 @@ def elf_symbols(binaries: list[lief.Binary]):
                 # The section index can be special numbers like 65521 or 65522
                 # that refer to special sections so they can't be indexed
                 section_name: str | None = next(
-                    (
-                        section.name
-                        for shndx, section in enumerate(binary.sections)
-                        if shndx == symbol.shndx
-                    ),
+                    (section.name for shndx, section in enumerate(binary.sections) if shndx == symbol.shndx),
                     None,
                 )
 
@@ -48,8 +41,7 @@ def elf_symbols(binaries: list[lief.Binary]):
                     # TODO(fzakaria): Better understand why is it auxiliary?
                     # this returns versions like GLIBC_2.2.5
                     "version": symbol.symbol_version.symbol_version_auxiliary.name
-                    if symbol.symbol_version
-                    and symbol.symbol_version.symbol_version_auxiliary
+                    if symbol.symbol_version and symbol.symbol_version.symbol_version_auxiliary
                     else None,
                     "type": symbol.type.name,
                     "value": symbol.value,
@@ -71,18 +63,16 @@ def symbols(binary: lief.Binary) -> Iterator[lief.ELF.Symbol]:
     A bad actor is free to strip arbitrarily from the static symbol table
     and it would affect this method.
     """
-    static_symbols = binary.static_symbols  # pyright: ignore - missing from pyi
+    static_symbols = binary.static_symbols  # type: ignore
     if len(static_symbols) > 0:
         return static_symbols
-    return binary.dynamic_symbols  # pyright: ignore - missing from pyi
+    return binary.dynamic_symbols  # type: ignore
 
 
 def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator = elf_symbols(binaries)
     # setup columns and access by providing an example of the first entry returned
-    generator.columns, generator.column_access = apsw.ext.get_column_names(
-        next(generator())
-    )
+    generator.columns, generator.column_access = apsw.ext.get_column_names(next(generator()))
     apsw.ext.make_virtual_module(connection, "raw_elf_symbols", generator)
     connection.execute(
         """

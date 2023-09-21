@@ -1,6 +1,3 @@
-# Without this Python was complaining
-from __future__ import annotations
-
 from typing import Any, Iterator
 
 import apsw
@@ -11,11 +8,7 @@ import lief
 def elf_strings(binaries: list[lief.Binary]):
     def generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
-            strtabs = [
-                section
-                for section in binary.sections
-                if section.type == lief.ELF.SECTION_TYPES.STRTAB
-            ]
+            strtabs = [section for section in binary.sections if section.type == lief.ELF.SECTION_TYPES.STRTAB]
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
             binary_name = binary.name
@@ -33,7 +26,5 @@ def elf_strings(binaries: list[lief.Binary]):
 def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator = elf_strings(binaries)
     # setup columns and access by providing an example of the first entry returned
-    generator.columns, generator.column_access = apsw.ext.get_column_names(
-        next(generator())
-    )
+    generator.columns, generator.column_access = apsw.ext.get_column_names(next(generator()))
     apsw.ext.make_virtual_module(connection, "elf_strings", generator)

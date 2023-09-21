@@ -1,6 +1,8 @@
 # sqlelf
 
 ![build workflow](https://github.com/fzakaria/sqlelf/actions/workflows/main.yml/badge.svg)
+[![PyPI - Version](https://img.shields.io/pypi/v/sqlelf.svg)](https://pypi.org/project/sqlelf)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/sqlelf.svg)](https://pypi.org/project/sqlelf)
 
 > Explore ELF objects through the power of SQL
 

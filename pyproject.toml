@@ -1,16 +1,27 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "sqlelf"
-version = "0.0.1"
+dynamic = ["version"]
 authors = [{ name = "Farid Zakaria", email = "farid.m.zakaria@gmail.com" }]
 readme = "README.md"
 description = "Explore ELF objects through the power of SQL"
 license = { file = "LICENSE" }
-requires-python = ">=3.10,<4.0"
-
+requires-python = ">=3.7"
+keywords = []
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
 dependencies = [
     "capstone >= 5.0.1",
     "lief >=0.13.2",
@@ -18,35 +29,116 @@ dependencies = [
     "sh >= 2.0.6",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "black >= 23.7.0",
-    "isort >= 5.12.0",
-    "flake8 >= 6.1.0",
-    "pyright >= 1.1.325",
-    "pytest >= 7.4.0",
-]
-
-[tool.setuptools]
-packages = ["sqlelf"]
+[project.urls]
+Documentation = "https://github.com/fzakaria/sqlelf#readme"
+Issues = "https://github.com/fzakaria/sqlelf/issues"
+Source = "https://github.com/fzakaria/sqlelf"
 
 [project.scripts]
 sqlelf = "sqlelf.cli:start"
 
-[tool.isort]
-skip = [".git", "result"]
-profile = "black"
+[tool.hatch.build.targets.wheel]
+packages = ["src/sqlelf"]
 
-[tool.pytest.ini_options]
-addopts = ""
+[tool.hatch.version]
+path = "src/sqlelf/__about__.py"
 
-[tool.pyright]
-include = ["sqlelf", "tests"]
-exclude = ["**/__pycache__"]
+[tool.hatch.envs.default]
+dependencies = ["coverage[toml]>=6.5", "pytest"]
 
-reportMissingImports = true
-reportMissingTypeStubs = true
-useLibraryCodeForTypes = true
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+cov-report = ["- coverage combine", "coverage report"]
+cov = ["test-cov", "cov-report"]
 
-pythonVersion = "3.10"
-pythonPlatform = "Linux"
+[[tool.hatch.envs.all.matrix]]
+python = ["3.7", "3.8", "3.9", "3.10", "3.11"]
+
+[tool.hatch.envs.lint]
+extra-dependencies = ["black>=23.1.0", "mypy>=1.0.0", "ruff>=0.0.243"]
+
+[tool.hatch.envs.lint.scripts]
+typing = "mypy --strict --install-types --non-interactive {args:src/sqlelf tests}"
+style = ["ruff {args:.}", "black --check --diff {args:.}"]
+fmt = ["black {args:.}", "ruff --fix {args:.}", "style"]
+all = ["style", "typing"]
+
+[tool.black]
+target-version = ["py37"]
+line-length = 120
+skip-string-normalization = true
+
+[tool.ruff]
+target-version = "py37"
+line-length = 120
+select = [
+    "A",
+    "ARG",
+    "B",
+    "C",
+    "DTZ",
+    "E",
+    "EM",
+    "F",
+    "FBT",
+    "I",
+    "ICN",
+    "ISC",
+    "N",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    "Q",
+    "RUF",
+    "S",
+    "T",
+    "TID",
+    "UP",
+    "W",
+    "YTT",
+]
+ignore = [
+    # Allow non-abstract empty methods in abstract base classes
+    "B027",
+    # Allow boolean positional values in function calls, like `dict.get(... True)`
+    "FBT003",
+    # Ignore checks for possible passwords
+    "S105",
+    "S106",
+    "S107",
+    # Ignore complexity
+    "C901",
+    "PLR0911",
+    "PLR0912",
+    "PLR0913",
+    "PLR0915",
+]
+unfixable = [
+    # Don't touch unused imports
+    "F401",
+]
+
+[tool.ruff.isort]
+known-first-party = ["sqlelf"]
+
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+"tests/**/*" = ["PLR2004", "S101", "TID252"]
+
+[tool.coverage.run]
+source_pkgs = ["sqlelf", "tests"]
+branch = true
+parallel = true
+omit = ["src/sqlelf/__about__.py"]
+
+[tool.coverage.paths]
+sqlelf = ["src/sqlelf", "*/sqlelf/src/sqlelf"]
+tests = ["tests", "*/sqlelf/tests"]
+
+[tool.coverage.report]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]

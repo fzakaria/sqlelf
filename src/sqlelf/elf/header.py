@@ -22,7 +22,5 @@ def elf_headers(binaries: list[lief.Binary]):
 def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator = elf_headers(binaries)
     # setup columns and access by providing an example of the first entry returned
-    generator.columns, generator.column_access = apsw.ext.get_column_names(
-        next(generator())
-    )
+    generator.columns, generator.column_access = apsw.ext.get_column_names(next(generator()))
     apsw.ext.make_virtual_module(connection, "elf_headers", generator)

@@ -3,18 +3,18 @@ from collections import OrderedDict
 from typing import Dict
 
 import lief
-import sh  # pyright: ignore
+import sh  # type: ignore
 
 
 def libraries(binary: lief.Binary) -> Dict[str, str]:
     """Use the interpreter in a binary to determine the path of each linked library"""
-    interpreter = sh.Command(binary.interpreter)  # pyright: ignore
+    interpreter = sh.Command(binary.interpreter)  # type: ignore
     resolution = interpreter("--list", binary.name)
     result = OrderedDict()
     # TODO: Figure out why `--list` and `ldd` produce different outcomes
     # specifically for the interpreter.
     # https://gist.github.com/fzakaria/3dc42a039401598d8e0fdbc57f5e7eae
-    for line in resolution.splitlines():  # pyright: ignore
+    for line in resolution.splitlines():
         m = re.match(r"\s*([^ ]+) => ([^ ]+)", line)
         if not m:
             continue

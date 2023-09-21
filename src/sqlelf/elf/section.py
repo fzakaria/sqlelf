@@ -1,6 +1,3 @@
-# Without this Python was complaining
-from __future__ import annotations
-
 from typing import Any, Iterator
 
 import apsw
@@ -36,7 +33,5 @@ def section_name(name: str | None) -> str | None:
 def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator = elf_sections(binaries)
     # setup columns and access by providing an example of the first entry returned
-    generator.columns, generator.column_access = apsw.ext.get_column_names(
-        next(generator())
-    )
+    generator.columns, generator.column_access = apsw.ext.get_column_names(next(generator()))
     apsw.ext.make_virtual_module(connection, "elf_sections", generator)
