@@ -6,7 +6,6 @@ from typing import Any, Iterator
 import apsw
 import apsw.ext
 import lief
-
 from sqlelf.elf.section import section_name as elf_section_name
 
 

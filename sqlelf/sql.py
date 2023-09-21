@@ -1,5 +1,6 @@
 import os
 import sys
+from dataclasses import dataclass
 from typing import Any, Iterator
 
 import apsw
@@ -8,7 +9,6 @@ import lief
 
 from sqlelf import ldd
 from sqlelf.elf import dynamic, header, instruction, section, strings, symbol
-from dataclasses import dataclass
 
 
 @dataclass
