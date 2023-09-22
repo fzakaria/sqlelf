@@ -244,7 +244,6 @@ def register_virtual_tables(
         (make_symbols_generator, "raw_elf_symbols"),
     ]
     for factory, name in factory_and_names:
-        print(name)
         generator = factory(binaries)
         # setup columns and access by providing an example of the first entry returned
         generator.columns, generator.column_access = apsw.ext.get_column_names(
