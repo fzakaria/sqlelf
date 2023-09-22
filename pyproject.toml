@@ -60,8 +60,7 @@ profile = "black"
 addopts = ""
 
 [tool.pyright]
-include = ["sqlelf", "tests"]
-exclude = ["**/__pycache__"]
+exclude = ["**/__pycache__", "sqlelf/_version.py"]
 
 reportMissingImports = true
 reportMissingTypeStubs = true
@@ -69,3 +68,4 @@ useLibraryCodeForTypes = true
 
 pythonVersion = "3.10"
 pythonPlatform = "Linux"
+include = ["sqlelf", "tests"]
