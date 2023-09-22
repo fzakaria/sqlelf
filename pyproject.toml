@@ -10,13 +10,26 @@ readme = "README.md"
 description = "Explore ELF objects through the power of SQL"
 license = { file = "LICENSE" }
 requires-python = ">=3.10,<4.0"
-
+keywords = []
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
 dependencies = [
     "capstone >= 5.0.1",
     "lief >=0.13.2",
     "apsw >= 3.43.1.0",
     "sh >= 2.0.6",
 ]
+
+[project.urls]
+Documentation = "https://github.com/fzakaria/sqlelf#readme"
+Issues = "https://github.com/fzakaria/sqlelf/issues"
+Source = "https://github.com/fzakaria/sqlelf"
 
 [project.optional-dependencies]
 dev = [
@@ -25,6 +38,7 @@ dev = [
     "flake8 >= 6.1.0",
     "pyright >= 1.1.325",
     "pytest >= 7.4.0",
+    "mypy >= 1.0.0",
 ]
 
 [tool.setuptools]

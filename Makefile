@@ -23,6 +23,7 @@ lint:             ## Run pep8, black, mypy linters.
 	flake8 sqlelf/
 	black --check sqlelf/
 	pyright
+	mypy --strict --install-types --non-interactive sqlelf tests
 
 .PHONY: test
 test:             ## Run pytest primarily.
