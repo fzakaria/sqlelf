@@ -225,7 +225,7 @@ def symbols(binary: lief.Binary) -> Sequence[lief.ELF.Symbol]:
     However it is often stripped from binaries as it's not needed beyond
     debugging.
 
-    This method uses the simplest heuristic of checking for it's existence
+    This method uses the simplest heuristic of checking for its existence
     to return the static symbol table.
 
     A bad actor is free to strip arbitrarily from the static symbol table
