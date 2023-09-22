@@ -10,15 +10,13 @@ import apsw.ext
 import capstone  # pyright: ignore
 import lief
 
-from sqlelf.elf.binary import Binary
 
-
-def elf_instructions(binaries: list[Binary]):
+def elf_instructions(binaries: list[lief.Binary]):
     def generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_path = binary.path
+            binary_name = binary.name
 
             for section in binary.sections:
                 if section.has(lief.ELF.SECTION_FLAGS.EXECINSTR):
@@ -36,7 +34,7 @@ def elf_instructions(binaries: list[Binary]):
                         data, section.virtual_address
                     ):
                         yield {
-                            "path": binary_path,
+                            "path": binary_name,
                             "section": section_name,
                             "mnemonic": mnemonic,
                             "address": address,
@@ -46,19 +44,19 @@ def elf_instructions(binaries: list[Binary]):
     return generator
 
 
-def mode(binary: Binary) -> int:
+def mode(binary: lief.Binary) -> int:
     if binary.header.identity_class == lief.ELF.ELF_CLASS.CLASS64:
         return capstone.CS_MODE_64
-    raise Exception(f"Unknown mode for {binary.path}")
+    raise Exception(f"Unknown mode for {binary.name}")
 
 
-def arch(binary: Binary) -> int:
+def arch(binary: lief.Binary) -> int:
     if binary.header.machine_type == lief.ELF.ARCH.x86_64:
         return capstone.CS_ARCH_X86
-    raise Exception(f"Unknown machine type for {binary.path}")
+    raise Exception(f"Unknown machine type for {binary.name}")
 
 
-def register(connection: apsw.Connection, binaries: list[Binary]):
+def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator = elf_instructions(binaries)
     # setup columns and access by providing an example of the first entry returned
     generator.columns, generator.column_access = apsw.ext.get_column_names(

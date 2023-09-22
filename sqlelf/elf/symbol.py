@@ -6,17 +6,15 @@ from typing import Any, Iterator
 import apsw
 import apsw.ext
 import lief
-
-from sqlelf.elf.binary import Binary
 from sqlelf.elf.section import section_name as elf_section_name
 
 
-def elf_symbols(binaries: list[Binary]):
+def elf_symbols(binaries: list[lief.Binary]):
     def generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_path = binary.path
+            binary_name = binary.name
             for symbol in symbols(binary):
                 # The section index can be special numbers like 65521 or 65522
                 # that refer to special sections so they can't be indexed
@@ -27,10 +25,10 @@ def elf_symbols(binaries: list[Binary]):
                         if shndx == symbol.shndx
                     ),
                     None,
-                )  # pyright: ignore (https://github.com/lief-project/LIEF/issues/965)
+                )
 
                 yield {
-                    "path": binary_path,
+                    "path": binary_name,
                     "name": symbol.name,
                     "demangled_name": symbol.demangled_name,
                     # A bit of detailed explanation here to explain these values.
@@ -52,14 +50,14 @@ def elf_symbols(binaries: list[Binary]):
                     if symbol.symbol_version
                     and symbol.symbol_version.symbol_version_auxiliary
                     else None,
-                    "type": symbol.type.__name__,
+                    "type": symbol.type.name,
                     "value": symbol.value,
                 }
 
     return generator
 
 
-def symbols(binary: Binary) -> Iterator[lief.ELF.Symbol]:
+def symbols(binary: lief.Binary) -> Iterator[lief.ELF.Symbol]:
     """Use heuristic to either get static symbols or dynamic symbol table
 
     The static symbol table is a superset of the dynamic symbol table.
@@ -72,13 +70,13 @@ def symbols(binary: Binary) -> Iterator[lief.ELF.Symbol]:
     A bad actor is free to strip arbitrarily from the static symbol table
     and it would affect this method.
     """
-    static_symbols = binary.static_symbols
+    static_symbols = binary.static_symbols  # pyright: ignore - missing from pyi
     if len(static_symbols) > 0:
         return static_symbols
-    return binary.dynamic_symbols
+    return binary.dynamic_symbols  # pyright: ignore - missing from pyi
 
 
-def register(connection: apsw.Connection, binaries: list[Binary]):
+def register(connection: apsw.Connection, binaries: list[lief.Binary]):
     generator = elf_symbols(binaries)
     # setup columns and access by providing an example of the first entry returned
     generator.columns, generator.column_access = apsw.ext.get_column_names(
