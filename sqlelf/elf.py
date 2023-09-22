@@ -245,10 +245,6 @@ def register_virtual_tables(
     ]
     for factory, name in factory_and_names:
         generator = factory(binaries)
-        # setup columns and access by providing an example of the first entry returned
-        generator.columns, generator.column_access = apsw.ext.get_column_names(
-            next(generator())
-        )
         apsw.ext.make_virtual_module(connection, name, generator)
     connection.execute(
         """
