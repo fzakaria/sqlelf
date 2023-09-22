@@ -3,7 +3,7 @@ import re
 import sys
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Any, Dict, Iterator
+from typing import Any, Dict, Iterator, TextIO
 
 import apsw
 import apsw.shell
@@ -17,9 +17,9 @@ from sqlelf import elf
 class SQLEngine:
     connection: apsw.Connection
 
-    def shell(self, stdin=sys.stdin) -> apsw.shell.Shell:
+    def shell(self, stdin: TextIO = sys.stdin) -> apsw.shell.Shell:
         shell = apsw.shell.Shell(db=self.connection, stdin=stdin)
-        shell.command_prompt(["sqlelf> "])
+        shell.command_prompt(["sqlelf> "])  # type: ignore[no-untyped-call]
         return shell
 
     def execute_raw(self, sql: str) -> apsw.Cursor:
@@ -51,7 +51,7 @@ def find_libraries(binary: lief.Binary) -> Dict[str, str]:
     return result
 
 
-def make_sql_engine(binaries: list[lief.Binary], recursive=False) -> SQLEngine:
+def make_sql_engine(binaries: list[lief.Binary], recursive: bool = False) -> SQLEngine:
     connection = apsw.Connection(":memory:")
 
     if recursive:
@@ -61,14 +61,14 @@ def make_sql_engine(binaries: list[lief.Binary], recursive=False) -> SQLEngine:
         # We want to readlink on the libraries to resolve
         # symlinks such as libm -> libc
         # also make this is a set in the case that multiple binaries use the same
-        shared_libraries = set(
+        shared_libraries_set = set(
             [
                 os.path.realpath(library)
                 for sub_list in shared_libraries
                 for library in sub_list
             ]
         )
-        binaries = binaries + [lief.parse(library) for library in shared_libraries]
+        binaries = binaries + [lief.parse(library) for library in shared_libraries_set]
 
     elf.register_virtual_tables(connection, binaries)
     return SQLEngine(connection)

@@ -18,7 +18,7 @@ class ProgramArguments:
     recursive: bool = False
 
 
-def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin):
+def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
     """
     Start the main CLI
 
@@ -74,6 +74,6 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin):
 
     if program_args.sql and len(program_args.filenames) > 0:
         for sql in program_args.sql:
-            shell.process_complete_line(sql)
+            shell.process_complete_line(sql)  # type: ignore[no-untyped-call]
     else:
-        shell.cmdloop()
+        shell.cmdloop()  # type: ignore[no-untyped-call]
