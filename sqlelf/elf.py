@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Callable, Iterator, Sequence, cast
 
@@ -9,7 +11,10 @@ import lief
 
 @dataclass
 class Generator:
-    """A generator for the virtual table SQLite module."""
+    """A generator for the virtual table SQLite module.
+
+    This class is needed because apsw wants to assign columns and
+    column_access to the generator function itself."""
 
     columns: Sequence[str]
     column_access: apsw.ext.VTColumnAccess
@@ -21,11 +26,18 @@ class Generator:
         The dictionaries should have keys that match the column names."""
         return self.callable()
 
+    @staticmethod
+    def make_generator(generator: Callable[[], Iterator[dict[str, Any]]]) -> Generator:
+        """Create a generator from a callable that returns
+        an iterator of dictionaries."""
+        columns, column_access = apsw.ext.get_column_names(next(generator()))
+        return Generator(columns, column_access, generator)
+
 
 def make_dynamic_entries_generator(binaries: list[lief.Binary]) -> Generator:
     """Create the .dynamic section virtual table."""
 
-    def _generator() -> Iterator[dict[str, Any]]:
+    def dynamic_entries_generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
@@ -33,14 +45,13 @@ def make_dynamic_entries_generator(binaries: list[lief.Binary]) -> Generator:
             for entry in binary.dynamic_entries:  # type: ignore
                 yield {"path": binary_name, "tag": entry.tag.name, "value": entry.value}
 
-    columns, column_access = apsw.ext.get_column_names(next(_generator()))
-    return Generator(columns, column_access, _generator)
+    return Generator.make_generator(dynamic_entries_generator)
 
 
 def make_headers_generator(binaries: list[lief.Binary]) -> Generator:
     """Create the ELF headers virtual table,"""
 
-    def _generator() -> Iterator[dict[str, Any]]:
+    def headers_generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             yield {
                 "path": binary.name,
@@ -50,8 +61,7 @@ def make_headers_generator(binaries: list[lief.Binary]) -> Generator:
                 "entry": binary.header.entrypoint,
             }
 
-    columns, column_access = apsw.ext.get_column_names(next(_generator()))
-    return Generator(columns, column_access, _generator)
+    return Generator.make_generator(headers_generator)
 
 
 def make_instructions_generator(binaries: list[lief.Binary]) -> Generator:
@@ -59,7 +69,7 @@ def make_instructions_generator(binaries: list[lief.Binary]) -> Generator:
 
     This table includes dissasembled instructions from the executable sections"""
 
-    def _generator() -> Iterator[dict[str, Any]]:
+    def instructions_generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
@@ -88,26 +98,25 @@ def make_instructions_generator(binaries: list[lief.Binary]) -> Generator:
                             "operands": op_str,
                         }
 
-    columns, column_access = apsw.ext.get_column_names(next(_generator()))
-    return Generator(columns, column_access, _generator)
+    return Generator.make_generator(instructions_generator)
 
 
 def mode(binary: lief.Binary) -> int:
     if binary.header.identity_class == lief.ELF.ELF_CLASS.CLASS64:
         return cast(int, capstone.CS_MODE_64)
-    raise Exception(f"Unknown mode for {binary.name}")
+    raise RuntimeError(f"Unknown mode for {binary.name}")
 
 
 def arch(binary: lief.Binary) -> int:
     if binary.header.machine_type == lief.ELF.ARCH.x86_64:
         return cast(int, capstone.CS_ARCH_X86)
-    raise Exception(f"Unknown machine type for {binary.name}")
+    raise RuntimeError(f"Unknown machine type for {binary.name}")
 
 
 def make_sections_generator(binaries: list[lief.Binary]) -> Generator:
     """Create the ELF sections virtual table."""
 
-    def _generator() -> Iterator[dict[str, Any]]:
+    def sections_generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
@@ -122,8 +131,7 @@ def make_sections_generator(binaries: list[lief.Binary]) -> Generator:
                     "content": bytes(section.content),
                 }
 
-    columns, column_access = apsw.ext.get_column_names(next(_generator()))
-    return Generator(columns, column_access, _generator)
+    return Generator.make_generator(sections_generator)
 
 
 def coerce_section_name(name: str | None) -> str | None:
@@ -139,7 +147,7 @@ def make_strings_generator(binaries: list[lief.Binary]) -> Generator:
     This goes through all string tables in the ELF binary and splits them on null bytes.
     """
 
-    def _generator() -> Iterator[dict[str, Any]]:
+    def strings_generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             strtabs = [
                 section
@@ -157,14 +165,13 @@ def make_strings_generator(binaries: list[lief.Binary]) -> Generator:
                 for string in str(strtab.content[1:-1], "utf-8").split("\x00"):
                     yield {"path": binary_name, "section": strtab.name, "value": string}
 
-    columns, column_access = apsw.ext.get_column_names(next(_generator()))
-    return Generator(columns, column_access, _generator)
+    return Generator.make_generator(strings_generator)
 
 
 def make_symbols_generator(binaries: list[lief.Binary]) -> Generator:
     """Create the ELF symbols virtual table."""
 
-    def _generator() -> Iterator[dict[str, Any]]:
+    def symbols_generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
@@ -208,8 +215,7 @@ def make_symbols_generator(binaries: list[lief.Binary]) -> Generator:
                     "value": symbol.value,
                 }
 
-    columns, column_access = apsw.ext.get_column_names(next(_generator()))
-    return Generator(columns, column_access, _generator)
+    return Generator.make_generator(symbols_generator)
 
 
 def symbols(binary: lief.Binary) -> Sequence[lief.ELF.Symbol]:
