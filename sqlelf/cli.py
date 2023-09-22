@@ -7,9 +7,18 @@ from functools import reduce
 import lief
 
 from sqlelf import sql as api_sql
+from typing import TextIO
+from dataclasses import dataclass
 
 
-def start(args=sys.argv[1:], stdin=sys.stdin):
+@dataclass
+class ProgramArguments:
+    filenames: list[str]
+    sql: list[str]
+    recursive: bool = False
+
+
+def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin):
     """
     Start the main CLI
 
