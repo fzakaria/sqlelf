@@ -1,10 +1,12 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools", "setuptools-scm[toml]", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "sqlelf"
-version = "0.0.1"
+# Using the dynamic version
+# version = "0.0.1"
+dynamic = ["version"]
 authors = [{ name = "Farid Zakaria", email = "farid.m.zakaria@gmail.com" }]
 readme = "README.md"
 description = "Explore ELF objects through the power of SQL"
@@ -41,6 +43,9 @@ dev = [
     "mypy >= 1.0.0",
 ]
 
+[tool.setuptools_scm]
+write_to = "sqlelf/_version.py"
+
 [tool.setuptools]
 packages = ["sqlelf"]
 
@@ -55,8 +60,7 @@ profile = "black"
 addopts = ""
 
 [tool.pyright]
-include = ["sqlelf", "tests"]
-exclude = ["**/__pycache__"]
+exclude = ["**/__pycache__", "sqlelf/_version.py"]
 
 reportMissingImports = true
 reportMissingTypeStubs = true
@@ -64,3 +68,4 @@ useLibraryCodeForTypes = true
 
 pythonVersion = "3.10"
 pythonPlatform = "Linux"
+include = ["sqlelf", "tests"]
