@@ -251,7 +251,35 @@ WHERE
 │ ./examples/nested-symbols/nested │ outer_function    │ inner_symbol      │
 └──────────────────────────────────┴───────────────────┴───────────────────┘
 ```
+</details>
 
+<details>
+<summary>Determine Python extension version</summary>
+
+You will need to edit the SQL below to have the _module name_.
+For instance, the blow assumes the module name is `extension` from the
+[pypa/python-manylinux-demo](https://github.com/pypa/python-manylinux-demo).
+
+```console
+❯ sqlelf pypa/python-manylinux-demo/build/lib.linux-x86_64-cpython-311/pymanylinuxdemo/extension.cpython-311-x86_64-linux-gnu.so \
+> --sql "        SELECT
+            CASE name
+                WHEN 'initextension' THEN 2
+                WHEN 'PyInit_extension' THEN 3
+                WHEN '_cffi_pypyinit_extension' THEN 2
+                ELSE -1
+            END AS python_version
+        FROM elf_symbols
+        WHERE name IN ('initextension', 'PyInit_extension', '_cffi_pypyinit_extension')
+              AND exported = TRUE
+              AND type = 'FUNC'
+        LIMIT 1
+        "
+┌────────────────┐
+│ python_version │
+│ 3              │
+└────────────────┘
+```
 </details>
 
 ## Development
