@@ -218,6 +218,29 @@ def make_symbols_generator(binaries: list[lief.Binary]) -> Generator:
     return Generator.make_generator(symbols_generator)
 
 
+def make_version_requirements(binaries: list[lief.Binary]) -> Generator:
+    """Create the ELF version requirements virtual table.
+
+    This should match the values found in .gnu.version_r section."""
+
+    def version_requirements_generator() -> Iterator[dict[str, Any]]:
+        for binary in binaries:
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.name
+            symbol_version_req = binary.symbols_version_requirement  # type: ignore
+            for version_requirement in symbol_version_req:
+                file = version_requirement.name
+                for aux_requirement in version_requirement.get_auxiliary_symbols():
+                    yield {
+                        "path": binary_name,
+                        "file": file,
+                        "name": aux_requirement.name,
+                    }
+
+    return Generator.make_generator(version_requirements_generator)
+
+
 def symbols(binary: lief.Binary) -> Sequence[lief.ELF.Symbol]:
     """Use heuristic to either get static symbols or dynamic symbol table
 
@@ -248,6 +271,7 @@ def register_virtual_tables(
         (make_sections_generator, "elf_sections"),
         (make_strings_generator, "elf_strings"),
         (make_symbols_generator, "raw_elf_symbols"),
+        (make_version_requirements, "elf_version_requirements"),
     ]
     for factory, name in factory_and_names:
         generator = factory(binaries)
