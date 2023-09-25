@@ -221,7 +221,8 @@ def make_symbols_generator(binaries: list[lief.Binary]) -> Generator:
 def make_version_requirements(binaries: list[lief.Binary]) -> Generator:
     """Create the ELF version requirements virtual table.
 
-    This should match the values found in .gnu.version_r section."""
+    This should match the values found in .gnu.version_r section.
+    It's not 100% clear whether this table is needed since it's in the symbol table."""
 
     def version_requirements_generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
@@ -239,6 +240,34 @@ def make_version_requirements(binaries: list[lief.Binary]) -> Generator:
                     }
 
     return Generator.make_generator(version_requirements_generator)
+
+
+def make_version_definitions(binaries: list[lief.Binary]) -> Generator:
+    """Create the ELF version requirements virtual table.
+
+    This should match the values found in .gnu.version_d section.
+    It's not 100% clear whether this table is needed since it's in the symbol table"""
+
+    def version_definitions_generator() -> Iterator[dict[str, Any]]:
+        for binary in binaries:
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.name
+            symbol_version_def = binary.symbols_version_definition  # type: ignore
+            for version_definition in symbol_version_def:
+                flags = version_definition.flags
+                for aux_definition in version_definition.auxiliary_symbols:
+                    yield {
+                        "path": binary_name,
+                        "name": aux_definition.name,
+                        "flags": flags,
+                    }
+
+    return Generator(
+        ["path", "name", "flags"],
+        apsw.ext.VTColumnAccess.By_Name,
+        version_definitions_generator,
+    )
 
 
 def symbols(binary: lief.Binary) -> Sequence[lief.ELF.Symbol]:
@@ -272,6 +301,7 @@ def register_virtual_tables(
         (make_strings_generator, "elf_strings"),
         (make_symbols_generator, "raw_elf_symbols"),
         (make_version_requirements, "elf_version_requirements"),
+        (make_version_definitions, "elf_version_definitions"),
     ]
     for factory, name in factory_and_names:
         generator = factory(binaries)

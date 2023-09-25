@@ -71,6 +71,12 @@ erDiagram
         string file
         string name
     }
+    ELF_HEADERS ||--o{ ELF_VERSION_DEFINITIONS : contains
+    ELF_VERSION_DEFINITIONS {
+        string path
+        string name
+        int flags
+    }
 ```
 
 ## Installation
