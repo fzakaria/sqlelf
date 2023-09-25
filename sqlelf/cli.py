@@ -6,8 +6,6 @@ from dataclasses import dataclass, field
 from functools import reduce
 from typing import TextIO
 
-import lief
-
 from sqlelf import sql as api_sql
 
 
@@ -60,16 +58,14 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
             program_args.filenames,
         ),
     )
-    # Filter the list of filenames to those that are ELF files only
-    filenames = [f for f in filenames if os.path.isfile(f) and lief.is_elf(f)]
+    # Filter the list of filenames to those that are files only
+    filenames = [f for f in filenames if os.path.isfile(f)]
 
     # If none of the inputs are valid files, simply return
     if len(filenames) == 0:
         sys.exit("No valid ELF files were provided")
 
-    binaries: list[lief.Binary] = [lief.parse(filename) for filename in filenames]
-
-    sql_engine = api_sql.make_sql_engine(binaries, recursive=program_args.recursive)
+    sql_engine = api_sql.make_sql_engine(filenames, recursive=program_args.recursive)
     shell = sql_engine.shell(stdin=stdin)
 
     if program_args.sql and len(program_args.filenames) > 0:

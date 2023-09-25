@@ -41,7 +41,7 @@ def test_simple_binary_mocked(Command: sh.Command) -> None:
 
 def test_simple_select_header() -> None:
     # TODO(fzakaria): Figure out a better binary to be doing that we control
-    engine = sql.make_sql_engine([lief.parse("/bin/ls")])
+    engine = sql.make_sql_engine(["/bin/ls"])
     result = list(engine.execute("SELECT * FROM elf_headers LIMIT 1"))
     assert len(result) == 1
     assert "path" in result[0]
@@ -53,7 +53,7 @@ def test_simple_select_header() -> None:
 
 def test_simple_select_version_requirements() -> None:
     # TODO(fzakaria): Figure out a better binary to be doing that we control
-    engine = sql.make_sql_engine([lief.parse("/bin/ls")])
+    engine = sql.make_sql_engine(["/bin/ls"])
     result = list(engine.execute("SELECT * FROM elf_version_requirements LIMIT 1"))
     assert len(result) == 1
     assert "path" in result[0]

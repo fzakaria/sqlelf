@@ -51,7 +51,15 @@ def find_libraries(binary: lief.Binary) -> Dict[str, str]:
     return result
 
 
-def make_sql_engine(binaries: list[lief.Binary], recursive: bool = False) -> SQLEngine:
+def make_sql_engine(filenames: list[str], recursive: bool = False) -> SQLEngine:
+    """Create a SQL engine from a list of binaries
+
+    Args:
+        filenames: the list of binaries to analyze -- should be absolute path
+        recursive: whether to recursively load all shared
+                libraries needed by each binary
+    """
+    binaries: list[lief.Binary] = [lief.parse(filename) for filename in filenames]
     connection = apsw.Connection(":memory:")
 
     if recursive:
