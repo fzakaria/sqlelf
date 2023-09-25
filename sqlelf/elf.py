@@ -27,11 +27,12 @@ class Generator:
         return self.callable()
 
     @staticmethod
-    def make_generator(generator: Callable[[], Iterator[dict[str, Any]]]) -> Generator:
+    def make_generator(
+        columns: list[str], generator: Callable[[], Iterator[dict[str, Any]]]
+    ) -> Generator:
         """Create a generator from a callable that returns
         an iterator of dictionaries."""
-        columns, column_access = apsw.ext.get_column_names(next(generator()))
-        return Generator(columns, column_access, generator)
+        return Generator(columns, apsw.ext.VTColumnAccess.By_Name, generator)
 
 
 def make_dynamic_entries_generator(binaries: list[lief.Binary]) -> Generator:
@@ -45,7 +46,10 @@ def make_dynamic_entries_generator(binaries: list[lief.Binary]) -> Generator:
             for entry in binary.dynamic_entries:  # type: ignore
                 yield {"path": binary_name, "tag": entry.tag.name, "value": entry.value}
 
-    return Generator.make_generator(dynamic_entries_generator)
+    return Generator.make_generator(
+        ["path", "tag", "value"],
+        dynamic_entries_generator,
+    )
 
 
 def make_headers_generator(binaries: list[lief.Binary]) -> Generator:
@@ -61,7 +65,10 @@ def make_headers_generator(binaries: list[lief.Binary]) -> Generator:
                 "entry": binary.header.entrypoint,
             }
 
-    return Generator.make_generator(headers_generator)
+    return Generator.make_generator(
+        ["path", "type", "machine", "version", "entry"],
+        headers_generator,
+    )
 
 
 def make_instructions_generator(binaries: list[lief.Binary]) -> Generator:
@@ -98,7 +105,10 @@ def make_instructions_generator(binaries: list[lief.Binary]) -> Generator:
                             "operands": op_str,
                         }
 
-    return Generator.make_generator(instructions_generator)
+    return Generator.make_generator(
+        ["path", "section", "mnemonic", "address", "operands"],
+        instructions_generator,
+    )
 
 
 def mode(binary: lief.Binary) -> int:
@@ -131,7 +141,10 @@ def make_sections_generator(binaries: list[lief.Binary]) -> Generator:
                     "content": bytes(section.content),
                 }
 
-    return Generator.make_generator(sections_generator)
+    return Generator.make_generator(
+        ["path", "name", "offset", "size", "type", "content"],
+        sections_generator,
+    )
 
 
 def coerce_section_name(name: str | None) -> str | None:
@@ -165,7 +178,10 @@ def make_strings_generator(binaries: list[lief.Binary]) -> Generator:
                 for string in str(strtab.content[1:-1], "utf-8").split("\x00"):
                     yield {"path": binary_name, "section": strtab.name, "value": string}
 
-    return Generator.make_generator(strings_generator)
+    return Generator.make_generator(
+        ["path", "section", "value"],
+        strings_generator,
+    )
 
 
 def make_symbols_generator(binaries: list[lief.Binary]) -> Generator:
@@ -215,7 +231,21 @@ def make_symbols_generator(binaries: list[lief.Binary]) -> Generator:
                     "value": symbol.value,
                 }
 
-    return Generator.make_generator(symbols_generator)
+    return Generator.make_generator(
+        [
+            "path",
+            "name",
+            "demangled_name",
+            "imported",
+            "exported",
+            "section",
+            "size",
+            "version",
+            "type",
+            "value",
+        ],
+        symbols_generator,
+    )
 
 
 def make_version_requirements(binaries: list[lief.Binary]) -> Generator:
@@ -239,7 +269,9 @@ def make_version_requirements(binaries: list[lief.Binary]) -> Generator:
                         "name": aux_requirement.name,
                     }
 
-    return Generator.make_generator(version_requirements_generator)
+    return Generator.make_generator(
+        ["path", "file", "name"], version_requirements_generator
+    )
 
 
 def make_version_definitions(binaries: list[lief.Binary]) -> Generator:
@@ -263,10 +295,8 @@ def make_version_definitions(binaries: list[lief.Binary]) -> Generator:
                         "flags": flags,
                     }
 
-    return Generator(
-        ["path", "name", "flags"],
-        apsw.ext.VTColumnAccess.By_Name,
-        version_definitions_generator,
+    return Generator.make_generator(
+        ["path", "name", "flags"], version_definitions_generator
     )
 
 

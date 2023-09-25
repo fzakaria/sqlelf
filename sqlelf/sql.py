@@ -27,10 +27,14 @@ class SQLEngine:
 
     def execute(self, sql: str) -> Iterator[dict[str, Any]]:
         cursor = self.execute_raw(sql)
-        description = cursor.getdescription()
-        column_names = [n for n, _ in description]
-        for row in cursor:
-            yield dict(zip(column_names, row))
+        try:
+            description = cursor.getdescription()
+            column_names = [n for n, _ in description]
+            for row in cursor:
+                yield dict(zip(column_names, row))
+        except apsw.ExecutionCompleteError:
+            # This can happen if we LIMIT 0 or there are no results
+            pass
 
 
 def find_libraries(binary: lief.Binary) -> Dict[str, str]:

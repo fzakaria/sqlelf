@@ -59,3 +59,10 @@ def test_simple_select_version_requirements() -> None:
     assert "path" in result[0]
     assert "file" in result[0]
     assert "name" in result[0]
+
+
+def test_select_zero_rows() -> None:
+    # TODO(fzakaria): Figure out a better binary to be doing that we control
+    engine = sql.make_sql_engine(["/bin/ls"])
+    result = list(engine.execute("SELECT * FROM elf_headers LIMIT 0"))
+    assert len(result) == 0
