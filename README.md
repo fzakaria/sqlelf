@@ -262,7 +262,7 @@ For instance, the blow assumes the module name is `extension` from the
 
 ```console
 ❯ sqlelf pypa/python-manylinux-demo/build/lib.linux-x86_64-cpython-311/pymanylinuxdemo/extension.cpython-311-x86_64-linux-gnu.so \
-> --sql "        SELECT
+> --sql "SELECT
             CASE name
                 WHEN 'initextension' THEN 2
                 WHEN 'PyInit_extension' THEN 3
