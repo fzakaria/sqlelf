@@ -3,7 +3,7 @@ import re
 import sys
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Any, Dict, Iterator, TextIO
+from typing import Any, Dict, Iterator, Optional, TextIO
 
 import apsw
 import apsw.shell
@@ -22,11 +22,15 @@ class SQLEngine:
         shell.command_prompt(["sqlelf> "])  # type: ignore[no-untyped-call]
         return shell
 
-    def execute_raw(self, sql: str) -> apsw.Cursor:
-        return self.connection.execute(sql)
+    def execute_raw(
+        self, sql: str, bindings: Optional["apsw.Bindings"] = None
+    ) -> apsw.Cursor:
+        return self.connection.execute(sql, bindings=bindings)
 
-    def execute(self, sql: str) -> Iterator[dict[str, Any]]:
-        cursor = self.execute_raw(sql)
+    def execute(
+        self, sql: str, bindings: Optional["apsw.Bindings"] = None
+    ) -> Iterator[dict[str, Any]]:
+        cursor = self.execute_raw(sql, bindings=bindings)
         try:
             description = cursor.getdescription()
             column_names = [n for n, _ in description]

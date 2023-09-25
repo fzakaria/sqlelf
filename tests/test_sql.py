@@ -72,3 +72,22 @@ def test_non_existent_file() -> None:
     engine = sql.make_sql_engine(["/doesnotexist"])
     result = list(engine.execute("SELECT * FROM elf_headers LIMIT 1"))
     assert len(result) == 0
+
+
+def test_select_with_bindings() -> None:
+    engine = sql.make_sql_engine(["/bin/ls", "/bin/cat"])
+    result = list(
+        engine.execute(
+            """
+            SELECT * FROM elf_version_requirements
+            WHERE path = :path
+            LIMIT 1
+            """,
+            {"path": "/bin/ls"},
+        )
+    )
+    assert len(result) == 1
+    assert "path" in result[0]
+    assert result[0]["path"] == "/bin/ls"
+    assert "file" in result[0]
+    assert "name" in result[0]
