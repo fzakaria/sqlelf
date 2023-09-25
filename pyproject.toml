@@ -44,6 +44,9 @@ dev = [
     "coverage[toml] >= 7.3",
 ]
 
+[tool.setuptools.package-data]
+sqlelf = ["py.typed"]
+
 [tool.setuptools_scm]
 write_to = "sqlelf/_version.py"
 
