@@ -66,3 +66,9 @@ def test_select_zero_rows() -> None:
     engine = sql.make_sql_engine(["/bin/ls"])
     result = list(engine.execute("SELECT * FROM elf_headers LIMIT 0"))
     assert len(result) == 0
+
+
+def test_non_existent_file() -> None:
+    engine = sql.make_sql_engine(["/doesnotexist"])
+    result = list(engine.execute("SELECT * FROM elf_headers LIMIT 1"))
+    assert len(result) == 0

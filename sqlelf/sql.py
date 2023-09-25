@@ -63,7 +63,9 @@ def make_sql_engine(filenames: list[str], recursive: bool = False) -> SQLEngine:
         recursive: whether to recursively load all shared
                 libraries needed by each binary
     """
-    binaries: list[lief.Binary] = [lief.parse(filename) for filename in filenames]
+    binaries: list[lief.Binary] = [
+        lief.parse(filename) for filename in filenames if lief.is_elf(filename)
+    ]
     connection = apsw.Connection(":memory:")
 
     if recursive:
