@@ -81,9 +81,7 @@ erDiagram
 
 ## Installation
 ```console
-❯ python3 -m venv venv
-❯ source venv/bin/activate
-❯ pip install .
+❯ pip install sqlelf
 ❯ sqlelf /usr/bin/python3 -- \
 --sql "select mnemonic, COUNT(*) from elf_instructions GROUP BY mnemonic ORDER BY 2 DESC LIMIT 3"
 
@@ -261,6 +259,8 @@ WHERE
 You may want to install the package in _editable mode_ as well to make development easier
 
 ```console
+> python3 -m venv venv
+> source venv/bin/activate
 > pip install --editable ".[dev]"
 ```
 
