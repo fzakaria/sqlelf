@@ -41,6 +41,7 @@ dev = [
     "pyright >= 1.1.325",
     "pytest >= 7.4.0",
     "mypy >= 1.0.0",
+    "coverage[toml] >= 7.3",
 ]
 
 [tool.setuptools_scm]
@@ -69,3 +70,7 @@ useLibraryCodeForTypes = true
 pythonVersion = "3.10"
 pythonPlatform = "Linux"
 include = ["sqlelf", "tests"]
+
+[tool.coverage.run]
+omit = ["sqlelf/_version.py", "sqlelf/**/__init__.py", "tests/**/__init__.py"]
+branch = true
