@@ -65,6 +65,12 @@ erDiagram
         string section
         string value
     }
+    ELF_HEADERS ||--o{ ELF_VERSION_REQUIREMENTS : contains
+    ELF_VERSION_REQUIREMENTS {
+        string path
+        string file
+        string name
+    }
 ```
 
 ## Installation
