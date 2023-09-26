@@ -59,13 +59,23 @@ def find_libraries(binary: lief.Binary) -> Dict[str, str]:
     return result
 
 
-def make_sql_engine(filenames: list[str], recursive: bool = False) -> SQLEngine:
+def make_sql_engine(
+    filenames: list[str],
+    recursive: bool = False,
+    flags: elf.GeneratorFlag = elf.GeneratorFlag.ALL(),
+) -> SQLEngine:
     """Create a SQL engine from a list of binaries
+
+    You can make the SQL engine more speedy by only specifying the
+    Generators (virtual tables) that you care about via the flags argument.
+    The INSTRUCTIONS and SYMBOLS table are typically quite expensive to generate
+    if they are not
 
     Args:
         filenames: the list of binaries to analyze -- should be absolute path
         recursive: whether to recursively load all shared
                 libraries needed by each binary
+        flags: the flags to use when generating the virtual tables
     """
     binaries: list[lief.Binary] = [
         lief.parse(filename) for filename in filenames if lief.is_elf(filename)
@@ -88,5 +98,5 @@ def make_sql_engine(filenames: list[str], recursive: bool = False) -> SQLEngine:
         )
         binaries = binaries + [lief.parse(library) for library in shared_libraries_set]
 
-    elf.register_virtual_tables(connection, binaries)
+    elf.register_virtual_tables(connection, binaries, flags)
     return SQLEngine(connection)
