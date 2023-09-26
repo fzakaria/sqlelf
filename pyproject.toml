@@ -61,7 +61,8 @@ skip = [".git", "result"]
 profile = "black"
 
 [tool.pytest.ini_options]
-addopts = ""
+addopts = "-m 'not slow' --strict-markers"
+markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
 
 [tool.pyright]
 exclude = ["**/__pycache__", "sqlelf/_version.py"]

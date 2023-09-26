@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Iterator, Sequence, cast
+from enum import Flag, auto
+from typing import Any, Callable, Iterator, Optional, Sequence, cast
 
 import apsw
 import apsw.ext
@@ -35,7 +36,40 @@ class Generator:
         return Generator(columns, apsw.ext.VTColumnAccess.By_Name, generator)
 
 
-def make_dynamic_entries_generator(binaries: list[lief.Binary]) -> Generator:
+class GeneratorFlag(Flag):
+    NONE = 0
+    DYNAMIC_ENTRIES = auto()
+    HEADERS = auto()
+    INSTRUCTIONS = auto()
+    SECTIONS = auto()
+    SYMBOLS = auto()
+    STRINGS = auto()
+    VERSION_REQUIREMENTS = auto()
+    VERSION_DEFINITIONS = auto()
+
+    @classmethod
+    def ALL(cls: type[GeneratorFlag]) -> GeneratorFlag:
+        retval = cls.NONE
+        for member in cls.__members__.values():
+            retval |= member
+        return retval
+
+
+@dataclass
+class MakeGeneratorResponse:
+    """A response from a generator factory.
+
+    Contains everything needed to register the virtual table."""
+
+    generator: Generator
+    table_name: str
+    flag: GeneratorFlag
+    sql: Optional[str] = None
+
+
+def make_dynamic_entries_generator(
+    binaries: list[lief.Binary],
+) -> MakeGeneratorResponse:
     """Create the .dynamic section virtual table."""
 
     def dynamic_entries_generator() -> Iterator[dict[str, Any]]:
@@ -46,13 +80,17 @@ def make_dynamic_entries_generator(binaries: list[lief.Binary]) -> Generator:
             for entry in binary.dynamic_entries:  # type: ignore
                 yield {"path": binary_name, "tag": entry.tag.name, "value": entry.value}
 
-    return Generator.make_generator(
-        ["path", "tag", "value"],
-        dynamic_entries_generator,
+    return MakeGeneratorResponse(
+        Generator.make_generator(
+            ["path", "tag", "value"],
+            dynamic_entries_generator,
+        ),
+        "elf_dynamic_entries",
+        GeneratorFlag.DYNAMIC_ENTRIES,
     )
 
 
-def make_headers_generator(binaries: list[lief.Binary]) -> Generator:
+def make_headers_generator(binaries: list[lief.Binary]) -> MakeGeneratorResponse:
     """Create the ELF headers virtual table,"""
 
     def headers_generator() -> Iterator[dict[str, Any]]:
@@ -65,13 +103,17 @@ def make_headers_generator(binaries: list[lief.Binary]) -> Generator:
                 "entry": binary.header.entrypoint,
             }
 
-    return Generator.make_generator(
-        ["path", "type", "machine", "version", "entry"],
-        headers_generator,
+    return MakeGeneratorResponse(
+        Generator.make_generator(
+            ["path", "type", "machine", "version", "entry"],
+            headers_generator,
+        ),
+        "elf_headers",
+        GeneratorFlag.HEADERS,
     )
 
 
-def make_instructions_generator(binaries: list[lief.Binary]) -> Generator:
+def make_instructions_generator(binaries: list[lief.Binary]) -> MakeGeneratorResponse:
     """Create the instructions virtual table.
 
     This table includes dissasembled instructions from the executable sections"""
@@ -105,9 +147,15 @@ def make_instructions_generator(binaries: list[lief.Binary]) -> Generator:
                             "operands": op_str,
                         }
 
-    return Generator.make_generator(
-        ["path", "section", "mnemonic", "address", "operands"],
-        instructions_generator,
+    return MakeGeneratorResponse(
+        Generator.make_generator(
+            ["path", "section", "mnemonic", "address", "operands"],
+            instructions_generator,
+        ),
+        "raw_elf_instructions",
+        GeneratorFlag.INSTRUCTIONS,
+        """CREATE TEMP TABLE elf_instructions
+        AS SELECT * FROM raw_elf_instructions;""",
     )
 
 
@@ -123,7 +171,7 @@ def arch(binary: lief.Binary) -> int:
     raise RuntimeError(f"Unknown machine type for {binary.name}")
 
 
-def make_sections_generator(binaries: list[lief.Binary]) -> Generator:
+def make_sections_generator(binaries: list[lief.Binary]) -> MakeGeneratorResponse:
     """Create the ELF sections virtual table."""
 
     def sections_generator() -> Iterator[dict[str, Any]]:
@@ -141,9 +189,13 @@ def make_sections_generator(binaries: list[lief.Binary]) -> Generator:
                     "content": bytes(section.content),
                 }
 
-    return Generator.make_generator(
-        ["path", "name", "offset", "size", "type", "content"],
-        sections_generator,
+    return MakeGeneratorResponse(
+        Generator.make_generator(
+            ["path", "name", "offset", "size", "type", "content"],
+            sections_generator,
+        ),
+        "elf_sections",
+        GeneratorFlag.SECTIONS,
     )
 
 
@@ -154,7 +206,7 @@ def coerce_section_name(name: str | None) -> str | None:
     return name
 
 
-def make_strings_generator(binaries: list[lief.Binary]) -> Generator:
+def make_strings_generator(binaries: list[lief.Binary]) -> MakeGeneratorResponse:
     """Create the ELF strings virtual table.
 
     This goes through all string tables in the ELF binary and splits them on null bytes.
@@ -188,9 +240,13 @@ def make_strings_generator(binaries: list[lief.Binary]) -> Generator:
                         "offset": offset + 1,
                     }
 
-    return Generator.make_generator(
-        ["path", "section", "value", "offset"],
-        strings_generator,
+    return MakeGeneratorResponse(
+        Generator.make_generator(
+            ["path", "section", "value", "offset"],
+            strings_generator,
+        ),
+        "elf_strings",
+        GeneratorFlag.STRINGS,
     )
 
 
@@ -207,7 +263,7 @@ def split_with_index(str: str, delimiter: str) -> list[tuple[int, str]]:
     return result
 
 
-def make_symbols_generator(binaries: list[lief.Binary]) -> Generator:
+def make_symbols_generator(binaries: list[lief.Binary]) -> MakeGeneratorResponse:
     """Create the ELF symbols virtual table."""
 
     def symbols_generator() -> Iterator[dict[str, Any]]:
@@ -254,24 +310,32 @@ def make_symbols_generator(binaries: list[lief.Binary]) -> Generator:
                     "value": symbol.value,
                 }
 
-    return Generator.make_generator(
-        [
-            "path",
-            "name",
-            "demangled_name",
-            "imported",
-            "exported",
-            "section",
-            "size",
-            "version",
-            "type",
-            "value",
-        ],
-        symbols_generator,
+    return MakeGeneratorResponse(
+        Generator.make_generator(
+            [
+                "path",
+                "name",
+                "demangled_name",
+                "imported",
+                "exported",
+                "section",
+                "size",
+                "version",
+                "type",
+                "value",
+            ],
+            symbols_generator,
+        ),
+        "raw_elf_symbols",
+        GeneratorFlag.SYMBOLS,
+        """CREATE TEMP TABLE elf_symbols
+        AS SELECT * FROM raw_elf_symbols;
+        CREATE INDEX elf_symbols_path_idx ON elf_symbols (path);
+        CREATE INDEX elf_symbols_name_idx ON elf_symbols (name);""",
     )
 
 
-def make_version_requirements(binaries: list[lief.Binary]) -> Generator:
+def make_version_requirements(binaries: list[lief.Binary]) -> MakeGeneratorResponse:
     """Create the ELF version requirements virtual table.
 
     This should match the values found in .gnu.version_r section.
@@ -292,12 +356,17 @@ def make_version_requirements(binaries: list[lief.Binary]) -> Generator:
                         "name": aux_requirement.name,
                     }
 
-    return Generator.make_generator(
-        ["path", "file", "name"], version_requirements_generator
+    return MakeGeneratorResponse(
+        Generator.make_generator(
+            ["path", "file", "name"],
+            version_requirements_generator,
+        ),
+        "elf_version_requirements",
+        GeneratorFlag.VERSION_REQUIREMENTS,
     )
 
 
-def make_version_definitions(binaries: list[lief.Binary]) -> Generator:
+def make_version_definitions(binaries: list[lief.Binary]) -> MakeGeneratorResponse:
     """Create the ELF version requirements virtual table.
 
     This should match the values found in .gnu.version_d section.
@@ -318,8 +387,13 @@ def make_version_definitions(binaries: list[lief.Binary]) -> Generator:
                         "flags": flags,
                     }
 
-    return Generator.make_generator(
-        ["path", "name", "flags"], version_definitions_generator
+    return MakeGeneratorResponse(
+        Generator.make_generator(
+            ["path", "name", "flags"],
+            version_definitions_generator,
+        ),
+        "elf_version_definitions",
+        GeneratorFlag.VERSION_DEFINITIONS,
     )
 
 
@@ -343,30 +417,38 @@ def symbols(binary: lief.Binary) -> Sequence[lief.ELF.Symbol]:
 
 
 def register_virtual_tables(
-    connection: apsw.Connection, binaries: list[lief.Binary]
+    connection: apsw.Connection,
+    binaries: list[lief.Binary],
+    flags: GeneratorFlag = GeneratorFlag.ALL(),
 ) -> None:
-    """Register the virtual table modules."""
-    factory_and_names = [
-        (make_dynamic_entries_generator, "elf_dynamic_entries"),
-        (make_headers_generator, "elf_headers"),
-        (make_instructions_generator, "raw_elf_instructions"),
-        (make_sections_generator, "elf_sections"),
-        (make_strings_generator, "elf_strings"),
-        (make_symbols_generator, "raw_elf_symbols"),
-        (make_version_requirements, "elf_version_requirements"),
-        (make_version_definitions, "elf_version_definitions"),
-    ]
-    for factory, name in factory_and_names:
-        generator = factory(binaries)
-        apsw.ext.make_virtual_module(connection, name, generator)
-    connection.execute(
-        """
-        CREATE TEMP TABLE elf_instructions
-        AS SELECT * FROM raw_elf_instructions;
+    """Register the virtual table modules.
 
-        CREATE TEMP TABLE elf_symbols
-        AS SELECT * FROM raw_elf_symbols;
-        CREATE INDEX elf_symbols_path_idx ON elf_symbols (path);
-        CREATE INDEX elf_symbols_name_idx ON elf_symbols (name);
-        """
-    )
+    You can make the SQL engine more speedy by only specifying the
+    Generators (virtual tables) that you care about via the flags argument.
+
+    Args:
+        connection: the connection to register the virtual tables on
+        binaries: the list of binaries to analyze
+        flags: the bitwise flags which controls which virtual table to enable"""
+    generator_factories = [
+        make_dynamic_entries_generator,
+        make_headers_generator,
+        make_instructions_generator,
+        make_sections_generator,
+        make_strings_generator,
+        make_symbols_generator,
+        make_version_requirements,
+        make_version_definitions,
+    ]
+    for factory in generator_factories:
+        generator_response = factory(binaries)
+
+        if generator_response.flag not in flags:
+            continue
+
+        apsw.ext.make_virtual_module(
+            connection, generator_response.table_name, generator_response.generator
+        )
+
+        if generator_response.sql:
+            connection.execute(generator_response.sql)
