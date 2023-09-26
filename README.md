@@ -304,6 +304,7 @@ WHERE elf_dynamic_entries.tag = 'NEEDED'"
 
 <details>
 <summary>Determine the RPATH/RINPATH entries for a program</summary>
+
 _This may be improved in the future but for now there is a little knowledge of the
 polymorphic nature of the dynamic entries needed_.
 
