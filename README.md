@@ -282,6 +282,26 @@ For instance, the blow assumes the module name is `extension` from the
 ```
 </details>
 
+<details>
+<summary>Determine the NEEDED entries for a program</summary>
+
+_This may be improved in the future but for now there is a little knowledge of the
+polymorphic nature of the dynamic entries needed_.
+
+```console
+❯ sqlelf extension.cpython-311-x86_64-linux-gnu.so \
+> --sql "SELECT elf_strings.path, elf_strings.value
+FROM elf_dynamic_entries
+INNER JOIN elf_strings ON elf_dynamic_entries.value = elf_strings.offset
+WHERE elf_dynamic_entries.tag = 'NEEDED'"
+┌───────────────────────────────────────────┬───────────────┐
+│                   path                    │     value     │
+│ extension.cpython-311-x86_64-linux-gnu.so │ libcblas.so.3 │
+│ extension.cpython-311-x86_64-linux-gnu.so │ libc.so.6     │
+└───────────────────────────────────────────┴───────────────┘
+```
+</details>
+
 ## Development
 
 You may want to install the package in _editable mode_ as well to make development easier

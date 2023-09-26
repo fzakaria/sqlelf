@@ -175,13 +175,36 @@ def make_strings_generator(binaries: list[lief.Binary]) -> Generator:
                 # Python also treats the final null in the string by creating
                 # an empty item so we chop it off.
                 # https://stackoverflow.com/a/18970869
-                for string in str(strtab.content[1:-1], "utf-8").split("\x00"):
-                    yield {"path": binary_name, "section": strtab.name, "value": string}
+                strtab_name = strtab.name
+                for offset, string in split_with_index(
+                    str(strtab.content[1:-1], "utf-8"), "\x00"
+                ):
+                    yield {
+                        "path": binary_name,
+                        "section": strtab_name,
+                        "value": string,
+                        # we add one from the offset since we removed the
+                        # null byte at the start of the STRTAB
+                        "offset": offset + 1,
+                    }
 
     return Generator.make_generator(
-        ["path", "section", "value"],
+        ["path", "section", "value", "offset"],
         strings_generator,
     )
+
+
+def split_with_index(str: str, delimiter: str) -> list[tuple[int, str]]:
+    """Split a string with the delimiter and return the index
+    of the start of the split."""
+    start = 0
+    result = []
+    for i, c in enumerate(str):
+        if c == delimiter:
+            result.append((start, str[start:i]))
+            start = i + 1
+    result.append((start, str[start:]))
+    return result
 
 
 def make_symbols_generator(binaries: list[lief.Binary]) -> Generator:
