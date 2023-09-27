@@ -9,7 +9,7 @@ def test_symbol_resolutions() -> None:
     # TODO(fzakaria): Make sure this binary
     # is always present in the CI environment.
     sql_engine = sql.make_sql_engine(
-        ["/usr/bin/ruby"], recursive=True, flags=elf.GeneratorFlag.SYMBOLS
+        ["/usr/bin/ruby"], recursive=True, cache_flags=elf.CacheFlag.SYMBOLS
     )
     result = sql_engine.execute(
         """
