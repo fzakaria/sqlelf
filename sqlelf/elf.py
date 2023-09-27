@@ -70,7 +70,6 @@ def register_generator(
     If so we rename the table with a prefix 'raw' and then create a temp table"""
     original_table_name = table_name
     if generator_flag in cache_flags:
-        print("here")
         table_name = f"raw_{table_name}"
 
     apsw.ext.make_virtual_module(connection, table_name, generator)
