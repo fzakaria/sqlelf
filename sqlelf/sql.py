@@ -62,7 +62,7 @@ def find_libraries(binary: lief.Binary) -> Dict[str, str]:
 def make_sql_engine(
     filenames: list[str],
     recursive: bool = False,
-    flags: elf.GeneratorFlag = elf.GeneratorFlag.ALL(),
+    cache_flags: elf.CacheFlag = elf.CacheFlag.INSTRUCTIONS | elf.CacheFlag.SYMBOLS,
 ) -> SQLEngine:
     """Create a SQL engine from a list of binaries
 
@@ -75,7 +75,7 @@ def make_sql_engine(
         filenames: the list of binaries to analyze -- should be absolute path
         recursive: whether to recursively load all shared
                 libraries needed by each binary
-        flags: the flags to use when generating the virtual tables
+        cache_flags: bit flag that controls which tables to cache
     """
     binaries: list[lief.Binary] = [
         lief.parse(filename) for filename in filenames if lief.is_elf(filename)
@@ -98,5 +98,5 @@ def make_sql_engine(
         )
         binaries = binaries + [lief.parse(library) for library in shared_libraries_set]
 
-    elf.register_virtual_tables(connection, binaries, flags)
+    elf.register_virtual_tables(connection, binaries, cache_flags)
     return SQLEngine(connection)
