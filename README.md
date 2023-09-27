@@ -310,8 +310,6 @@ polymorphic nature of the dynamic entries needed_.
 
 The below uses a file built with [NixOS](https://nixos.org) as they all have RUNPATH set.
 
-A recursive query can further be used to split the row into multiple rows. 
-
 ```console
 ❯ sqlelf /nix/store/gjr9ylm023rl9di484g1wxcd1jp84xxv-nix-2.8.1/bin/nix \
  --sql "SELECT elf_strings.path, elf_strings.value
@@ -326,6 +324,33 @@ WHERE elf_dynamic_entries.tag = 'RUNPATH';"
 │                                                 │ editline-1.17.1/lib:/nix/store/ppm63lvkyfa58sgcnr2ddzh14dy1k9fn-boehm-gc-8.0.6/lib:/nix/store/sgw2i15l01rwxzj62745h30bsjmh7wc1-lowdown-0.11.1-                        │
 │                                                 │ lib/lib:/nix/store/bvy2z17rzlvkx2sj7fy99ajm853yv898-glibc-2.34-210/lib:/nix/store/gka59hya7l7qp26s0rydcgq8hj0d7v7k-gcc-11.3.0-lib/lib                                 │
 └─────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+A recursive query can further be used to split the row into multiple rows.
+
+```console
+❯ sqlelf /nix/store/gjr9ylm023rl9di484g1wxcd1jp84xxv-nix-2.8.1/bin/nix \
+--sql "WITH split(rpath, str) AS (
+    SELECT '', elf_strings.value||':' as rpath
+    FROM elf_dynamic_entries
+    INNER JOIN elf_strings ON elf_dynamic_entries.value = elf_strings.offset
+    WHERE elf_dynamic_entries.tag = 'RUNPATH'
+    UNION ALL SELECT
+    substr(str, 0, instr(str, ':')),
+    substr(str, instr(str, ':')+1)
+    FROM split WHERE str!=''
+) SELECT rpath FROM split WHERE rpath!='';"
+WARNING:root:SQLITE_LOG: automatic index on elf_strings(offset) (284) SQLITE_WARNING SQLITE_WARNING_AUTOINDEX
+┌────────────────────────────────────────────────────────────────────┐
+│                               rpath                                │
+│ /nix/store/gjr9ylm023rl9di484g1wxcd1jp84xxv-nix-2.8.1/lib          │
+│ /nix/store/pkxyfwarcq081rybpbnprjmnkiy1cz6g-libsodium-1.0.18/lib   │
+│ /nix/store/r6mrf9pz4dpax6rcszcmbyrpsk8j6saz-editline-1.17.1/lib    │
+│ /nix/store/ppm63lvkyfa58sgcnr2ddzh14dy1k9fn-boehm-gc-8.0.6/lib     │
+│ /nix/store/sgw2i15l01rwxzj62745h30bsjmh7wc1-lowdown-0.11.1-lib/lib │
+│ /nix/store/bvy2z17rzlvkx2sj7fy99ajm853yv898-glibc-2.34-210/lib     │
+│ /nix/store/gka59hya7l7qp26s0rydcgq8hj0d7v7k-gcc-11.3.0-lib/lib     │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
 </details>

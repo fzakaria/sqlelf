@@ -289,6 +289,11 @@ def register_strings_generator(
         cache_flags,
     )
 
+    if CacheFlag.STRINGS in cache_flags:
+        connection.execute(
+            """CREATE INDEX elf_strings_offset_idx ON elf_strings (offset);"""
+        )
+
 
 def split_with_index(str: str, delimiter: str) -> list[tuple[int, str]]:
     """Split a string with the delimiter and return the index

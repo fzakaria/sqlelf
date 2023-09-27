@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from functools import reduce
 from typing import TextIO
 
+from sqlelf import elf
 from sqlelf import sql as api_sql
 
 
@@ -65,7 +66,9 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
     if len(filenames) == 0:
         sys.exit("No valid ELF files were provided")
 
-    sql_engine = api_sql.make_sql_engine(filenames, recursive=program_args.recursive)
+    sql_engine = api_sql.make_sql_engine(
+        filenames, recursive=program_args.recursive, cache_flags=elf.CacheFlag.ALL()
+    )
     shell = sql_engine.shell(stdin=stdin)
 
     if program_args.sql and len(program_args.filenames) > 0:
