@@ -159,6 +159,18 @@ For instance, to have _sqelf_ emit JSON you can do the following:
 { "path": "\/usr\/bin\/ruby", "name": ".note.gnu.property"},
 ```
 
+`sqlelf` will store the data from the ELF file into in-memory SQLite database. This allows you to run multiple queries against the same file(s) without having to reparse them and is much more efficient than iterating the ELF structures. This comes at the cost of startup time.
+
+You can however _dump_ the sqlite database to a file on disk and then load it back up later. This is useful if you want to run many queries against the same file(s) and don't want to pay the startup cost each time.
+
+```console
+❯ sqlelf /nix/store/gjr9ylm023rl9di484g1wxcd1jp84xxv-nix-2.8.1/bin/nix \
+    --sql ".dump /tmp/nix.sqlite"
+❯ file /tmp/nix-backup.sqlite
+/tmp/nix-backup.sqlite: SQLite 3.x database, last written using SQLite version 3043001, writer version 2,
+    read version 2, file counter 3, database pages 14069, cookie 0x2, schema 4, UTF-8, version-valid-for 3
+```
+
 ### Queries
 
 <details>

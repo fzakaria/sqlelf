@@ -76,7 +76,7 @@ def register_generator(
 
     if generator_flag in cache_flags:
         connection.execute(
-            f"""CREATE TEMP TABLE {original_table_name}
+            f"""CREATE TABLE {original_table_name}
             AS SELECT * FROM {table_name};"""
         )
 
