@@ -269,7 +269,7 @@ WHERE
 <summary>Determine Python extension version</summary>
 
 You will need to edit the SQL below to have the _module name_.
-For instance, the blow assumes the module name is `extension` from the
+For instance, the below assumes the module name is `extension` from the
 [pypa/python-manylinux-demo](https://github.com/pypa/python-manylinux-demo).
 
 ```console
