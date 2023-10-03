@@ -3,19 +3,24 @@
 import timeit
 import tempfile
 import subprocess
-from pathlib import Path
 from sqlelf import sql, elf
+import pprint
+import sqlite3
 import time
 
 
-def create_executable_file(file_name: str, num_functions: int) -> str:
+def create_executable_file(
+    file: tempfile.NamedTemporaryFile, num_functions: int
+) -> str:
     """Create an ELF executable file with a given number of functions"""
-    functions = ""
-    for i in range(num_functions):
-        functions += f"""void function_{i}() {{ printf("Hello World {i}"); }}\n"""
+    functions = [
+        f"""void function_{i}() {{ printf("Hello World {i}"); }}\n"""
+        for i in range(num_functions)
+    ]
+    functions_str = "".join(functions)
     content = f"""
     #include <stdio.h>
-    {functions}
+    {functions_str}
     int main() {{ printf("Hello World!"); return 0; }}
     """
     file.write(content)
@@ -43,24 +48,49 @@ def sqlelf_benchmark(binary_name: str, num_functions: int) -> None:
     assert count >= num_functions
 
 
+def sqlelf_memoized_benchmark(sqlite_database: str, num_functions: int) -> None:
+    with sqlite3.connect(sqlite_database) as con:
+        result = list(con.execute("SELECT COUNT(*) as 'count' FROM ELF_SYMBOLS"))
+        count = result[0][0]
+        assert count >= num_functions
+
+
+data = {"Number of Functions": [], "sqlelf": [], "sqlelf-memoized": [], "readelf": []}
+
 for exponent in range(1, 6):
     num_functions = 10**exponent
+    data["Number of Functions"].append(num_functions)
+
     print(f"Number of functions: {num_functions}")
     # create the executable
     with tempfile.NamedTemporaryFile(mode="w") as file:
         file_name = file.name
-        binary_file = create_executable_file(file_name, num_functions)
-        print(
-            "readelf benchmark: {}".format(
-                timeit.timeit(
-                    lambda: readelf_benchmark(binary_file, num_functions), number=1
-                )
+        binary_file = create_executable_file(file, num_functions)
+        data["readelf"].append(
+            min(
+                timeit.Timer(
+                    lambda: readelf_benchmark(binary_file, num_functions)
+                ).repeat(repeat=10, number=1)
             )
         )
-        print(
-            "sqlelf benchmark: {}".format(
-                timeit.timeit(
-                    lambda: sqlelf_benchmark(binary_file, num_functions), number=1
-                )
+        data["sqlelf"].append(
+            timeit.timeit(
+                lambda: sqlelf_benchmark(binary_file, num_functions), number=1
             )
         )
+
+        sql_engine = sql.make_sql_engine(
+            [binary_file], cache_flags=elf.CacheFlag.SYMBOLS
+        )
+
+        sqlite_database = tempfile.NamedTemporaryFile().name
+        sql_engine.dump(sqlite_database)
+        data["sqlelf-memoized"].append(
+            min(
+                timeit.Timer(
+                    lambda: sqlelf_memoized_benchmark(sqlite_database, num_functions),
+                ).repeat(repeat=10, number=1)
+            )
+        )
+
+pprint.pprint(data)

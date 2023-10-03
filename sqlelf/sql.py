@@ -22,6 +22,17 @@ class SQLEngine:
         shell.command_prompt(["sqlelf> "])  # type: ignore[no-untyped-call]
         return shell
 
+    def dump(self, file_name: str) -> None:
+        """Dump the database to a file"""
+        out_connection = apsw.Connection(file_name)
+        backup = out_connection.backup("main", self.connection, "main")
+        try:
+            while not backup.done:
+                backup.step()
+        finally:
+            backup.finish()
+            out_connection.close()
+
     def execute_raw(
         self, sql: str, bindings: Optional["apsw.Bindings"] = None
     ) -> apsw.Cursor:
