@@ -1,12 +1,16 @@
 #! /usr/bin/env python3
-"""A benchmark to measure the time it takes to load a binary with a given number of functions."""
-import timeit
-import tempfile
-import subprocess
-from sqlelf import sql, elf
+"""A benchmark to measure the time it takes to load a
+    binary with a given number of functions.
+
+Afterwards, run the file graph_symbol_size_benchmark.py to
+generate a graph of the results."""
 import pprint
 import sqlite3
-import time
+import subprocess
+import tempfile
+import timeit
+
+from sqlelf import elf, sql
 
 
 def create_executable_file(
@@ -61,7 +65,7 @@ for exponent in range(1, 6):
     num_functions = 10**exponent
     data["Number of Functions"].append(num_functions)
 
-    print(f"Number of functions: {num_functions}")
+    print(f"Number of functions: {num_functions}")  # noqa: T201
     # create the executable
     with tempfile.NamedTemporaryFile(mode="w") as file:
         file_name = file.name
@@ -93,4 +97,4 @@ for exponent in range(1, 6):
             )
         )
 
-pprint.pprint(data)
+pprint.pprint(data)  # noqa: T203

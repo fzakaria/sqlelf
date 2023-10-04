@@ -1,7 +1,8 @@
 """This file tests the examples in the README.md file"""
 
-from sqlelf import sql, elf
 import pytest
+
+from sqlelf import elf, sql
 
 
 @pytest.mark.slow

@@ -1,7 +1,9 @@
-from sqlelf import sql
-import lief
 from unittest.mock import patch
+
+import lief
 import sh  # type: ignore
+
+from sqlelf import sql
 
 
 def test_simple_binary_real() -> None:
@@ -21,14 +23,14 @@ def test_simple_binary_mocked(Command: sh.Command) -> None:
         fake.so.6 => /some-path/fake.so.6
         libc.so.6 => /nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib/libc.so.6 (0x00007f6995bac000)
         /lib64/ld-linux-x86-64.so.2 => /nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib64/ld-linux-x86-64.so.2 (0x00007f6995dc1000)
-    """
+    """  # noqa: E501
     Command(interpreter).return_value = expected_return_value  # pyright: ignore
     result = sql.find_libraries(binary)
     assert len(result) == 4
     assert result["fake.so.6"] == "/some-path/fake.so.6"
     assert (
         result["/lib64/ld-linux-x86-64.so.2"]
-        == "/nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib64/ld-linux-x86-64.so.2"
+        == "/nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib64/ld-linux-x86-64.so.2"  # noqa: E501
     )
     assert (
         result["libc.so.6"]

@@ -1,6 +1,8 @@
-from sqlelf import cli
-import pytest
 from io import StringIO
+
+import pytest
+
+from sqlelf import cli
 
 
 def test_cli_bad_arguments() -> None:
@@ -19,7 +21,7 @@ def test_cli_single_file_arguments() -> None:
 
 
 def test_cli_single_non_existent_file_arguments() -> None:
-    with pytest.raises(SystemExit) as err:
+    with pytest.raises(SystemExit):
         cli.start(["does_not_exist"])
 
 
