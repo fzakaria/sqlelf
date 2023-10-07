@@ -57,7 +57,7 @@ plot = (
     )  # Define data and aesthetics
     + geom_line()  # Add line geometry
     + theme_classic()  # Minimal theme
-    + labs(title="", x="Number of Functions", y="Time (s)", color="")
+    + labs(title="", x="Number of Symbols", y="Time (s)", color="")
     + scale_x_continuous(trans="log10")
     + scale_y_log10(expand=(0, 0, 0, 1))
 )
