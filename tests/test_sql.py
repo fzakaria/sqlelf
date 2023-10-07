@@ -41,6 +41,20 @@ def test_simple_binary_mocked(Command: sh.Command) -> None:
     assert result["libselinux.so.1"] == "not"
 
 
+def test_find_libraries_no_interpreter() -> None:
+    binary = lief.parse("/bin/ls")
+    binary.interpreter = ""  # type: ignore
+    result = sql.find_libraries(binary)
+    assert len(result) == 0
+
+
+def test_find_libraries_missing_interpreter() -> None:
+    binary = lief.parse("/bin/ls")
+    binary.interpreter = "/nix/store/something/ld-linux.so.2"  # type: ignore
+    result = sql.find_libraries(binary)
+    assert len(result) == 0
+
+
 def test_simple_select_header() -> None:
     # TODO(fzakaria): Figure out a better binary to be doing that we control
     engine = sql.make_sql_engine(["/bin/ls"])

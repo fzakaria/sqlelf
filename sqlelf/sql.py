@@ -55,7 +55,17 @@ class SQLEngine:
 def find_libraries(binary: lief.Binary) -> Dict[str, str]:
     """Use the interpreter in a binary to determine the path of each linked library"""
     interpreter = binary.interpreter  # type: ignore
-    interpreter_cmd = sh.Command(interpreter)
+    # interpreter can be none/empty if it is a static linked binary
+    # or a dynamic linked binary itself
+    if not interpreter:
+        return {}
+    try:
+        interpreter_cmd = sh.Command(interpreter)
+    except sh.CommandNotFound:
+        # If we can't find the interpreter, we can't resolve the libraries
+        # so we return an empty dictionary
+        # This can happen if we are building binaries wth Nix
+        return {}
     resolution = interpreter_cmd("--list", binary.name)
     result = OrderedDict()
     # TODO: Figure out why `--list` and `ldd` produce different outcomes
