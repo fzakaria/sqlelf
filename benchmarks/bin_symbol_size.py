@@ -24,7 +24,9 @@ def is_elf_file(filepath):
     return magic_number == b"\x7fELF"
 
 
-for root, dirs, files in itertools.chain(os.walk("/bin"), os.walk("/usr/bin")):
+for root, dirs, files in itertools.chain(
+    os.walk("/bin"), os.walk("/usr/bin"), os.walk("/lib/x86_64-linux-gnu")
+):
     for file in files:
         full_path_file = os.path.join(root, file)
         if not os.path.isfile(full_path_file) or not os.access(full_path_file, os.X_OK):

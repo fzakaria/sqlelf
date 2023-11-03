@@ -11,6 +11,7 @@ from plotnine import (
     ggplot,
     labs,
     save_as_pdf_pages,
+    scale_y_log10,
     theme_minimal,
 )
 
@@ -22,12 +23,14 @@ data_dict = json.load(JSON_FILE)
 
 # Convert to DataFrame
 df = pd.DataFrame(list(data_dict.items()), columns=["File", "Symbols"])
+df = df.query("Symbols > 0")
 
 # Create plot
 plot = (
     ggplot(df, aes(x="Symbols", y=after_stat("ncount")))
     + geom_histogram(bins=100, fill="skyblue", color="black", alpha=0.7)
     + labs(title="", x="Number of Symbols", y="Normalized Count")
+    + scale_y_log10(expand=(0, 0, 0.1, 0))
     + theme_minimal()
 )
 
