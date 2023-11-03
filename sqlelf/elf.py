@@ -465,20 +465,20 @@ def register_version_definitions(
 def symbols(binary: lief.Binary) -> Sequence[lief.ELF.Symbol]:
     """Use heuristic to either get static symbols or dynamic symbol table
 
-    The static symbol table is a superset of the dynamic symbol table.
-    However it is often stripped from binaries as it's not needed beyond
-    debugging.
+    Always return the dynamic symbol table first and then the static symbols
+    if it exists. From the static symbols, exclude any symbol that is also present
+    in the dynamic symbol table so that it is not counted twice.
 
-    This method uses the simplest heuristic of checking for its existence
-    to return the static symbol table.
-
-    A bad actor is free to strip arbitrarily from the static symbol table
-    and it would affect this method.
+    We prefer symbols from the dynamic symbol table because the static symbol table
+    will not include version information.
     """
     static_symbols: Sequence[lief.ELF.Symbol] = binary.static_symbols  # type: ignore
-    if len(static_symbols) > 0:
-        return static_symbols
-    return binary.dynamic_symbols  # type: ignore
+    dynamic_symbols = list(binary.dynamic_symbols)  # type: ignore
+    dynamic_symbol_names = set(map(lambda s: s.name, dynamic_symbols))
+    all_symbols = dynamic_symbols + [
+        s for s in static_symbols if s.name not in dynamic_symbol_names
+    ]
+    return all_symbols
 
 
 def register_virtual_tables(
