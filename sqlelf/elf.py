@@ -121,10 +121,11 @@ def register_headers_generator(
                 "machine": binary.header.machine_type.name,
                 "version": binary.header.identity_version.name,
                 "entry": binary.header.entrypoint,
+                "is_pie": binary.is_pie,
             }
 
     generator = Generator.make_generator(
-        ["path", "type", "machine", "version", "entry"],
+        ["path", "type", "machine", "version", "entry", "is_pie"],
         headers_generator,
     )
 
