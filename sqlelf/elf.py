@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Flag, auto
-from typing import Any, Callable, Iterator, Sequence, cast
+from typing import Any, Callable, Iterator, Sequence, Tuple, cast
 
 import apsw
 import apsw.ext
 import capstone  # type: ignore
 import lief
+
+from sqlelf._vendor.elftools.common.utils import bytes2str
+from sqlelf._vendor.elftools.dwarf.descriptions import describe_form_class
+from sqlelf._vendor.elftools.dwarf.die import DIE as DIE_t
+from sqlelf._vendor.elftools.elf.elffile import ELFFile
 
 
 @dataclass
@@ -46,6 +51,7 @@ class CacheFlag(Flag):
     STRINGS = auto()
     VERSION_REQUIREMENTS = auto()
     VERSION_DEFINITIONS = auto()
+    DWARF_DIE = auto()
 
     @classmethod
     def ALL(cls: type[CacheFlag]) -> CacheFlag:
@@ -463,6 +469,78 @@ def register_version_definitions(
     )
 
 
+def register_dwarf_dies(
+    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+) -> None:
+    """Create the DWARF DIE (Debugging Information Entry) virtual table."""
+
+    def determine_high_low_pc(DIE: DIE_t) -> Tuple[int | None, int | None]:
+        """Determine the high_pc.
+
+        The high_pc can be either an address or an offset from the low_pc.
+        DWARF v4 in section 2.17 describes how to interpret the
+        DW_AT_high_pc attribute based on the class of its form.
+        For class 'address' it's taken as an absolute address
+        (similarly to DW_AT_low_pc); for class 'constant', it's
+        an offset from DW_AT_low_pc.
+        https://github.com/eliben/pyelftools/blob/5d31cad41e7c5701db024f228255276a48cd65d1/examples/dwarf_decode_address.py#L53C1-L68C33
+        """
+        low_pc_attr = DIE.attributes.get("DW_AT_low_pc", None)
+        # We must only check low_pc otherwise high_pc exists
+        if not low_pc_attr:
+            return (None, None)
+        low_pc = low_pc_attr.value
+        high_pc_attr = DIE.attributes["DW_AT_high_pc"]
+        high_pc_attr_class = describe_form_class(high_pc_attr.form)
+        high_pc = None
+        if high_pc_attr_class == "address":
+            high_pc = high_pc_attr.value
+        elif high_pc_attr_class == "constant":
+            high_pc = low_pc + high_pc_attr.value
+        else:
+            raise RuntimeError("Unknown attribute class: %s" % high_pc_attr_class)
+        return (low_pc, high_pc)
+
+    def dwarf_dies_generator() -> Iterator[dict[str, Any]]:
+        for binary in binaries:
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.name
+            # A bit annoying but we must re-open the file
+            # since we are using a different library here
+            with open(binary_name, "rb") as f:
+                elf_file = ELFFile(f)
+                if not elf_file.has_dwarf_info():
+                    continue
+                # get_dwarf_info returns a DWARFInfo context object, which is the
+                # starting point for all DWARF-based processing in pyelftools.
+                dwarf_info = elf_file.get_dwarf_info()
+                for CU in dwarf_info.iter_CUs():
+                    for DIE in CU.iter_DIEs():
+                        DIE = cast(
+                            DIE_t, DIE
+                        )  # annoying cast since iter_CUEs returns DIE_t | None
+                        die_name = DIE.attributes.get("DW_AT_name", None)
+                        yield {
+                            "path": binary_name,
+                            "tag": DIE.tag,
+                            "name": bytes2str(die_name.value) if die_name else None,
+                        }
+
+    generator = Generator.make_generator(
+        ["path", "tag", "name"],
+        dwarf_dies_generator,
+    )
+
+    register_generator(
+        connection,
+        generator,
+        "dwarf_dies",
+        CacheFlag.DWARF_DIE,
+        cache_flags,
+    )
+
+
 def symbols(binary: lief.Binary) -> Sequence[lief.ELF.Symbol]:
     """Use heuristic to either get static symbols or dynamic symbol table
 
@@ -505,6 +583,7 @@ def register_virtual_tables(
         register_symbols_generator,
         register_version_requirements,
         register_version_definitions,
+        register_dwarf_dies,
     ]
     for register_function in register_table_functions:
         register_function(binaries, connection, cache_flags)

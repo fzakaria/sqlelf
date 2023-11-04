@@ -59,14 +59,18 @@ sqlelf = "sqlelf.cli:start"
 
 [tool.isort]
 skip = [".git", "result"]
+skip_glob = ["sqlelf/_vendor/*"]
 profile = "black"
+
+[tool.black]
+extend-exclude = "sqlelf/_vendor/"
 
 [tool.pytest.ini_options]
 addopts = "-m 'not slow' --strict-markers"
 markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
 
 [tool.pyright]
-exclude = ["**/__pycache__", "sqlelf/_version.py"]
+exclude = ["**/__pycache__", "sqlelf/_version.py", "sqlelf/_vendor"]
 
 reportMissingImports = true
 reportMissingTypeStubs = true
