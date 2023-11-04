@@ -521,14 +521,17 @@ def register_dwarf_dies(
                             DIE_t, DIE
                         )  # annoying cast since iter_CUEs returns DIE_t | None
                         die_name = DIE.attributes.get("DW_AT_name", None)
+                        low_pc, high_pc = determine_high_low_pc(DIE)
                         yield {
                             "path": binary_name,
                             "tag": DIE.tag,
                             "name": bytes2str(die_name.value) if die_name else None,
+                            "low_pc": low_pc,
+                            "high_pc": high_pc,
                         }
 
     generator = Generator.make_generator(
-        ["path", "tag", "name"],
+        ["path", "tag", "name", "low_pc", "high_pc"],
         dwarf_dies_generator,
     )
 
