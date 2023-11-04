@@ -33,3 +33,7 @@ test:             ## Run pytest primarily.
 .PHONY: coverage
 coverage:
 	coverage run -m pytest
+
+.PHONY: vendor
+vendor:             ## Update third-party dependencies.
+	copybara copy.bara.sky vendor_pyelftools --folder-dir ./sqlelf/_vendor

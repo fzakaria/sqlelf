@@ -1,0 +1,12 @@
+core.workflow(
+    name = "vendor_pyelftools",
+    origin = git.github_origin(
+        url = "https://github.com/eliben/pyelftools.git",
+        ref = "master",
+    ),
+    destination = folder.destination(),
+    authoring = authoring.pass_thru("Farid Zakaria <farid.m.zakaria@gmail.com>"),
+    origin_files = glob(["elftools/**"]),
+    transformations = [
+    ],
+)
