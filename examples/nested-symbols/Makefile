@@ -1,6 +1,6 @@
 # Variables
 CC = gcc
-CFLAGS = -Wall -O2
+CFLAGS = -Wall -g
 TARGET = exe
 SRC = nested.c
 
