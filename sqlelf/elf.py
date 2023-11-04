@@ -517,9 +517,9 @@ def register_dwarf_dies(
                 dwarf_info = elf_file.get_dwarf_info()
                 for CU in dwarf_info.iter_CUs():
                     for DIE in CU.iter_DIEs():
-                        DIE = cast(
-                            DIE_t, DIE
-                        )  # annoying cast since iter_CUEs returns DIE_t | None
+                        # iter_DIEs can return null DIES which are terminators
+                        if DIE is None:
+                            continue
                         die_name = DIE.attributes.get("DW_AT_name", None)
                         low_pc, high_pc = determine_high_low_pc(DIE)
                         yield {
