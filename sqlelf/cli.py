@@ -15,6 +15,16 @@ class ProgramArguments:
     filenames: list[str] = field(default_factory=list)
     sql: list[str] = field(default_factory=list)
     recursive: bool = False
+    cache_flag: elf.CacheFlag = elf.CacheFlag.ALL()
+
+
+def cache_flag_type(str: str) -> elf.CacheFlag:
+    """Split a comma separated list of cache flags into a single cache flag"""
+    flag_names = str.split(",")
+    flag = elf.CacheFlag.NONE
+    for name in flag_names:
+        flag |= elf.CacheFlag.from_string(name.strip().upper())
+    return flag
 
 
 def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
@@ -45,6 +55,17 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
         help="Load all shared libraries needed by each file using ldd",
     )
 
+    default_cache_flag_str = (
+        str(elf.CacheFlag.ALL()).replace("CacheFlag.", "").replace("|", ",")
+    )
+    parser.add_argument(
+        "--cache-flag",
+        type=cache_flag_type,
+        default=elf.CacheFlag.ALL(),
+        help=f"""A comma-separated list of flags to set which control caching.
+            Default is ALL which is shorthand for {default_cache_flag_str}""",
+    )
+
     program_args: ProgramArguments = parser.parse_args(
         args, namespace=ProgramArguments()
     )
@@ -67,7 +88,7 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
         sys.exit("No valid ELF files were provided")
 
     sql_engine = api_sql.make_sql_engine(
-        filenames, recursive=program_args.recursive, cache_flags=elf.CacheFlag.ALL()
+        filenames, recursive=program_args.recursive, cache_flags=program_args.cache_flag
     )
     shell = sql_engine.shell(stdin=stdin)
 

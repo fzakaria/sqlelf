@@ -52,6 +52,19 @@ class CacheFlag(Flag):
     VERSION_REQUIREMENTS = auto()
     VERSION_DEFINITIONS = auto()
     DWARF_DIE = auto()
+    DWARF_DIE_CALL_GRAPH = auto()
+
+    @classmethod
+    def from_string(cls: type[CacheFlag], str: str) -> CacheFlag:
+        """Convert a string to a CacheFlag.
+
+        This also specially handles 'ALL' which returns all the flags."""
+        if str == "ALL":
+            return cls.ALL()
+        try:
+            return cls[str]
+        except KeyError:
+            raise ValueError(f"{str} is not a valid CacheFlag")
 
     @classmethod
     def ALL(cls: type[CacheFlag]) -> CacheFlag:
@@ -486,11 +499,13 @@ def register_dwarf_dies(
         https://github.com/eliben/pyelftools/blob/5d31cad41e7c5701db024f228255276a48cd65d1/examples/dwarf_decode_address.py#L53C1-L68C33
         """
         low_pc_attr = DIE.attributes.get("DW_AT_low_pc", None)
-        # We must only check low_pc otherwise high_pc exists
         if not low_pc_attr:
             return (None, None)
         low_pc = low_pc_attr.value
-        high_pc_attr = DIE.attributes["DW_AT_high_pc"]
+        high_pc_attr = DIE.attributes.get("DW_AT_high_pc", None)
+        # TODO(fzakaria): understand why high can be not be present if low exists
+        if not high_pc_attr:
+            return (low_pc, None)
         high_pc_attr_class = describe_form_class(high_pc_attr.form)
         high_pc = None
         if high_pc_attr_class == "address":
@@ -528,10 +543,13 @@ def register_dwarf_dies(
                             "name": bytes2str(die_name.value) if die_name else None,
                             "low_pc": low_pc,
                             "high_pc": high_pc,
+                            # This is also the primary key of the DIE
+                            "offset": DIE.offset,
+                            "size": DIE.size,
                         }
 
     generator = Generator.make_generator(
-        ["path", "tag", "name", "low_pc", "high_pc"],
+        ["path", "tag", "name", "low_pc", "high_pc", "offset", "size"],
         dwarf_dies_generator,
     )
 
@@ -540,6 +558,51 @@ def register_dwarf_dies(
         generator,
         "dwarf_dies",
         CacheFlag.DWARF_DIE,
+        cache_flags,
+    )
+
+
+def register_dwarf_dies_graph(
+    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+) -> None:
+    """Create the DWARF DIE (Debugging Information Entry) graph virtual table."""
+
+    def dwarf_dies_graph_generator() -> Iterator[dict[str, Any]]:
+        for binary in binaries:
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.name
+            # A bit annoying but we must re-open the file
+            # since we are using a different library here
+            with open(binary_name, "rb") as f:
+                elf_file = ELFFile(f)
+                if not elf_file.has_dwarf_info():
+                    continue
+                # get_dwarf_info returns a DWARFInfo context object, which is the
+                # starting point for all DWARF-based processing in pyelftools.
+                dwarf_info = elf_file.get_dwarf_info()
+                for CU in dwarf_info.iter_CUs():
+                    for DIE in CU.iter_DIEs():
+                        # iter_DIEs can return null DIES which are terminators
+                        if DIE is None:
+                            continue
+                        for DIE_child in DIE.iter_children():
+                            yield {
+                                "path": binary_name,
+                                "parent_offset": DIE.offset,
+                                "child_offset": DIE_child.offset,
+                            }
+
+    generator = Generator.make_generator(
+        ["path", "parent_offset", "child_offset"],
+        dwarf_dies_graph_generator,
+    )
+
+    register_generator(
+        connection,
+        generator,
+        "dwarf_dies_graph",
+        CacheFlag.DWARF_DIE_CALL_GRAPH,
         cache_flags,
     )
 
@@ -587,6 +650,7 @@ def register_virtual_tables(
         register_version_requirements,
         register_version_definitions,
         register_dwarf_dies,
+        register_dwarf_dies_graph,
     ]
     for register_function in register_table_functions:
         register_function(binaries, connection, cache_flags)
