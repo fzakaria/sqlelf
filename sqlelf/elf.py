@@ -504,6 +504,7 @@ def register_dwarf_dies(
         low_pc = low_pc_attr.value
         high_pc_attr = DIE.attributes.get("DW_AT_high_pc", None)
         # TODO(fzakaria): understand why high can be not be present if low exists
+        # seems to be possible though...
         if not high_pc_attr:
             return (low_pc, None)
         high_pc_attr_class = describe_form_class(high_pc_attr.form)
@@ -546,10 +547,11 @@ def register_dwarf_dies(
                             # This is also the primary key of the DIE
                             "offset": DIE.offset,
                             "size": DIE.size,
+                            "cu_offset": CU.cu_offset,
                         }
 
     generator = Generator.make_generator(
-        ["path", "tag", "name", "low_pc", "high_pc", "offset", "size"],
+        ["path", "tag", "name", "low_pc", "high_pc", "offset", "size", "cu_offset"],
         dwarf_dies_generator,
     )
 
