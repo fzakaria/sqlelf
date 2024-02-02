@@ -191,10 +191,11 @@ def register_instructions_generator(
                             "mnemonic": mnemonic,
                             "address": address,
                             "operands": op_str,
+                            "size": size,
                         }
 
     generator = Generator.make_generator(
-        ["path", "section", "mnemonic", "address", "operands"],
+        ["path", "section", "mnemonic", "address", "operands", "size"],
         instructions_generator,
     )
 
