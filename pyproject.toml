@@ -23,7 +23,7 @@ classifiers = [
 ]
 dependencies = [
     "capstone >= 5.0.1",
-    "lief >=0.13.2",
+    "lief >=0.14.0",
     "apsw >= 3.43.1.0",
     "sh >= 2.0.6",
 ]
@@ -39,9 +39,9 @@ dev = [
     "isort >= 5.12.0",
     "flake8 >= 6.1.0",
     "flake8-print >= 5.0.0",
-    "pyright >= 1.1.325",
+    "pyright >= 1.1.349",
     "pytest >= 7.4.0",
-    "mypy >= 1.0.0",
+    "mypy >= 1.8.0",
     "coverage[toml] >= 7.3",
 ]
 

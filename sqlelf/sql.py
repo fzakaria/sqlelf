@@ -10,7 +10,7 @@ import apsw.shell
 import lief
 import sh  # type: ignore
 
-from sqlelf import elf
+from sqlelf import elf, lief_ext
 
 
 @dataclass
@@ -52,9 +52,9 @@ class SQLEngine:
             pass
 
 
-def find_libraries(binary: lief.Binary) -> Dict[str, str]:
+def find_libraries(binary: lief_ext.Binary) -> Dict[str, str]:
     """Use the interpreter in a binary to determine the path of each linked library"""
-    interpreter = binary.interpreter  # type: ignore
+    interpreter = binary.interpreter
     # interpreter can be none/empty if it is a static linked binary
     # or a dynamic linked binary itself
     if not interpreter:
@@ -66,7 +66,7 @@ def find_libraries(binary: lief.Binary) -> Dict[str, str]:
         # so we return an empty dictionary
         # This can happen if we are building binaries wth Nix
         return {}
-    resolution = interpreter_cmd("--list", binary.name)
+    resolution = interpreter_cmd("--list", binary.path)
     result = OrderedDict()
     # TODO: Figure out why `--list` and `ldd` produce different outcomes
     # specifically for the interpreter.
@@ -98,8 +98,8 @@ def make_sql_engine(
                 libraries needed by each binary
         cache_flags: bit flag that controls which tables to cache
     """
-    binaries: list[lief.Binary] = [
-        lief.parse(filename) for filename in filenames if lief.is_elf(filename)
+    binaries: list[lief_ext.Binary] = [
+        lief_ext.Binary(filename) for filename in filenames if lief.is_elf(filename)
     ]
     connection = apsw.Connection(":memory:")
 
@@ -117,7 +117,9 @@ def make_sql_engine(
                 for library in sub_list
             ]
         )
-        binaries = binaries + [lief.parse(library) for library in shared_libraries_set]
+        binaries = binaries + [
+            lief_ext.Binary(library) for library in shared_libraries_set
+        ]
 
     elf.register_virtual_tables(connection, binaries, cache_flags)
     return SQLEngine(connection)

@@ -1,21 +1,21 @@
+from dataclasses import dataclass
 from unittest.mock import patch
 
-import lief
 import sh  # type: ignore
 
-from sqlelf import sql
+from sqlelf import lief_ext, sql
 
 
 def test_simple_binary_real() -> None:
-    binary = lief.parse("/bin/ls")
+    binary = lief_ext.Binary("/bin/ls")
     result = sql.find_libraries(binary)
     assert len(result) > 0
 
 
 @patch("sh.Command")
 def test_simple_binary_mocked(Command: sh.Command) -> None:
-    binary = lief.parse("/bin/ls")
-    interpreter = binary.interpreter  # type: ignore
+    binary = lief_ext.Binary("/bin/ls")
+    interpreter = binary.interpreter
     expected_return_value = """
         linux-vdso.so.1 (0x00007ffc5d8ff000)
         /lib/x86_64-linux-gnu/libnss_cache.so.2 (0x00007f6995d92000)
@@ -42,46 +42,61 @@ def test_simple_binary_mocked(Command: sh.Command) -> None:
 
 
 def test_find_libraries_no_interpreter() -> None:
-    binary = lief.parse("/bin/ls")
-    binary.interpreter = ""  # type: ignore
+    binary = lief_ext.Binary("/bin/ls")
+    binary.interpreter = ""
     result = sql.find_libraries(binary)
     assert len(result) == 0
 
 
 def test_find_libraries_missing_interpreter() -> None:
-    binary = lief.parse("/bin/ls")
-    binary.interpreter = "/nix/store/something/ld-linux.so.2"  # type: ignore
+    binary = lief_ext.Binary("/bin/ls")
+    binary.interpreter = "/nix/store/something/ld-linux.so.2"
     result = sql.find_libraries(binary)
     assert len(result) == 0
 
 
-def test_simple_select_header() -> None:
+def test_all_selects() -> None:
+    """This test gets all the tables that should be created by sqlelf
+    as they are prefixed with elf_ and tries to fetch all columns
+
+    This is a pretty good way to get a quick exhausting test over all
+    the functionality."""
+    # Generate all the SELECT statements for us
+    select_all_sql = """SELECT 'SELECT * FROM ' || name || ' LIMIT 1' as 'sql'
+             FROM sqlite_schema where name LIKE 'elf_%' AND type = 'table'"""
+    engine = sql.make_sql_engine(["/bin/ls"])
+    results = list(engine.execute(select_all_sql))
+    for result in results:
+        assert len(list(engine.execute(result["sql"]))) == 1
+
+
+@dataclass
+class TestCase:
+    table: str
+    columns: list[str]
+
+
+def test_simple_selects() -> None:
+    test_cases = [
+        TestCase(
+            "elf_headers", ["path", "type", "version", "machine", "entry", "is_pie"]
+        ),
+        TestCase(
+            "elf_instructions",
+            ["path", "section", "mnemonic", "address", "operands", "size"],
+        ),
+        TestCase("elf_version_requirements", ["path", "file", "name"]),
+    ]
     # TODO(fzakaria): Figure out a better binary to be doing that we control
     engine = sql.make_sql_engine(["/bin/ls"])
-    result = list(engine.execute("SELECT * FROM elf_headers LIMIT 1"))
-    assert len(result) == 1
-    assert "path" in result[0]
-    assert "type" in result[0]
-    assert "version" in result[0]
-    assert "machine" in result[0]
-    assert "entry" in result[0]
+    for test_case in test_cases:
+        result = list(engine.execute(f"SELECT * FROM {test_case.table} LIMIT 1"))
+        assert len(result) == 1
+        assert all(column in result[0] for column in test_case.columns)
 
-
-def test_simple_select_version_requirements() -> None:
-    # TODO(fzakaria): Figure out a better binary to be doing that we control
-    engine = sql.make_sql_engine(["/bin/ls"])
-    result = list(engine.execute("SELECT * FROM elf_version_requirements LIMIT 1"))
-    assert len(result) == 1
-    assert "path" in result[0]
-    assert "file" in result[0]
-    assert "name" in result[0]
-
-
-def test_select_zero_rows() -> None:
-    # TODO(fzakaria): Figure out a better binary to be doing that we control
-    engine = sql.make_sql_engine(["/bin/ls"])
-    result = list(engine.execute("SELECT * FROM elf_headers LIMIT 0"))
-    assert len(result) == 0
+        # also test selecting a LIMIT of 0 as that can require special handling
+        result = list(engine.execute(f"SELECT * FROM {test_case.table} LIMIT 0"))
+        assert len(result) == 0
 
 
 def test_non_existent_file() -> None:

@@ -9,6 +9,12 @@ import apsw.ext
 import capstone  # type: ignore
 import lief
 
+# ELF.pyi has no matching py file since it's a c extension
+# pyright: reportMissingModuleSource=false
+# https://github.com/microsoft/pyright/issues/5950
+import lief.ELF
+
+from sqlelf import lief_ext
 from sqlelf._vendor.elftools.common.utils import bytes2str
 from sqlelf._vendor.elftools.dwarf.descriptions import describe_form_class
 from sqlelf._vendor.elftools.dwarf.die import DIE as DIE_t
@@ -101,7 +107,7 @@ def register_generator(
 
 
 def register_dynamic_entries_generator(
-    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
     """Create the .dynamic section virtual table."""
 
@@ -109,9 +115,13 @@ def register_dynamic_entries_generator(
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_name = binary.name
-            for entry in binary.dynamic_entries:  # type: ignore
-                yield {"path": binary_name, "tag": entry.tag.name, "value": entry.value}
+            binary_name = binary.path
+            for entry in binary.dynamic_entries:
+                yield {
+                    "path": binary_name,
+                    "tag": entry.tag.__name__,
+                    "value": entry.value,
+                }
 
     generator = Generator.make_generator(
         ["path", "tag", "value"],
@@ -128,17 +138,17 @@ def register_dynamic_entries_generator(
 
 
 def register_headers_generator(
-    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
     """Create the ELF headers virtual table,"""
 
     def headers_generator() -> Iterator[dict[str, Any]]:
         for binary in binaries:
             yield {
-                "path": binary.name,
-                "type": binary.header.file_type.name,
-                "machine": binary.header.machine_type.name,
-                "version": binary.header.identity_version.name,
+                "path": binary.path,
+                "type": binary.header.file_type.__name__,
+                "machine": binary.header.machine_type.__name__,
+                "version": binary.header.identity_version.__name__,
                 "entry": binary.header.entrypoint,
                 "is_pie": binary.is_pie,
             }
@@ -158,7 +168,7 @@ def register_headers_generator(
 
 
 def register_instructions_generator(
-    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
     """Create the instructions virtual table.
 
@@ -168,7 +178,7 @@ def register_instructions_generator(
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_name = binary.name
+            binary_name = binary.path
 
             for section in binary.sections:
                 if section.has(lief.ELF.SECTION_FLAGS.EXECINSTR):
@@ -208,20 +218,20 @@ def register_instructions_generator(
     )
 
 
-def mode(binary: lief.Binary) -> int:
+def mode(binary: lief_ext.Binary) -> int:
     if binary.header.identity_class == lief.ELF.ELF_CLASS.CLASS64:
         return cast(int, capstone.CS_MODE_64)
-    raise RuntimeError(f"Unknown mode for {binary.name}")
+    raise RuntimeError(f"Unknown mode for {binary.path}")
 
 
-def arch(binary: lief.Binary) -> int:
+def arch(binary: lief_ext.Binary) -> int:
     if binary.header.machine_type == lief.ELF.ARCH.x86_64:
         return cast(int, capstone.CS_ARCH_X86)
-    raise RuntimeError(f"Unknown machine type for {binary.name}")
+    raise RuntimeError(f"Unknown machine type for {binary.path}")
 
 
 def register_sections_generator(
-    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
     """Create the ELF sections virtual table."""
 
@@ -229,14 +239,14 @@ def register_sections_generator(
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_name = binary.name
+            binary_name = binary.path
             for section in binary.sections:
                 yield {
                     "path": binary_name,
                     "name": section.name,
                     "offset": section.offset,
                     "size": section.size,
-                    "type": section.type.name,
+                    "type": section.type.__name__,
                     "content": bytes(section.content),
                 }
 
@@ -262,7 +272,7 @@ def coerce_section_name(name: str | None) -> str | None:
 
 
 def register_strings_generator(
-    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
     """Create the ELF strings virtual table.
 
@@ -278,7 +288,7 @@ def register_strings_generator(
             ]
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_name = binary.name
+            binary_name = binary.path
             for strtab in strtabs:
                 # The first byte is always the null byte in the STRTAB
                 # Python also treats the final null in the string by creating
@@ -330,7 +340,7 @@ def split_with_index(str: str, delimiter: str) -> list[tuple[int, str]]:
 
 
 def register_symbols_generator(
-    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
     """Create the ELF symbols virtual table."""
 
@@ -338,13 +348,15 @@ def register_symbols_generator(
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_name = binary.name
+            binary_name = binary.path
             for symbol in symbols(binary):
                 # The section index can be special numbers like 65521 or 65522
                 # that refer to special sections so they can't be indexed
                 section_name: str | None = next(
                     (
-                        section.name
+                        # technically name can be bytes, for now avoid this possibility
+                        # https://github.com/lief-project/LIEF/issues/965#issuecomment-1718702335
+                        cast(str, section.name)
                         for shndx, section in enumerate(binary.sections)
                         if shndx == symbol.shndx
                     ),
@@ -376,7 +388,7 @@ def register_symbols_generator(
                         and symbol.symbol_version.symbol_version_auxiliary
                         else None
                     ),
-                    "type": symbol.type.name,
+                    "type": symbol.type.__name__,
                     "value": symbol.value,
                 }
 
@@ -412,7 +424,7 @@ def register_symbols_generator(
 
 
 def register_version_requirements(
-    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
     """Create the ELF version requirements virtual table.
 
@@ -423,8 +435,8 @@ def register_version_requirements(
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_name = binary.name
-            symbol_version_req = binary.symbols_version_requirement  # type: ignore
+            binary_name = binary.path
+            symbol_version_req = binary.symbols_version_requirement
             for version_requirement in symbol_version_req:
                 file = version_requirement.name
                 for aux_requirement in version_requirement.get_auxiliary_symbols():
@@ -449,7 +461,7 @@ def register_version_requirements(
 
 
 def register_version_definitions(
-    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
     """Create the ELF version requirements virtual table.
 
@@ -460,8 +472,8 @@ def register_version_definitions(
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_name = binary.name
-            symbol_version_def = binary.symbols_version_definition  # type: ignore
+            binary_name = binary.path
+            symbol_version_def = binary.symbols_version_definition
             for version_definition in symbol_version_def:
                 flags = version_definition.flags
                 for aux_definition in version_definition.auxiliary_symbols:
@@ -486,7 +498,7 @@ def register_version_definitions(
 
 
 def register_dwarf_dies(
-    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
     """Create the DWARF DIE (Debugging Information Entry) virtual table."""
 
@@ -524,7 +536,7 @@ def register_dwarf_dies(
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_name = binary.name
+            binary_name = binary.path
             # A bit annoying but we must re-open the file
             # since we are using a different library here
             with open(binary_name, "rb") as f:
@@ -568,7 +580,7 @@ def register_dwarf_dies(
 
 
 def register_dwarf_dies_graph(
-    binaries: list[lief.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
     """Create the DWARF DIE (Debugging Information Entry) graph virtual table."""
 
@@ -576,7 +588,7 @@ def register_dwarf_dies_graph(
         for binary in binaries:
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
-            binary_name = binary.name
+            binary_name = binary.path
             # A bit annoying but we must re-open the file
             # since we are using a different library here
             with open(binary_name, "rb") as f:
@@ -612,7 +624,7 @@ def register_dwarf_dies_graph(
     )
 
 
-def symbols(binary: lief.Binary) -> Sequence[lief.ELF.Symbol]:
+def symbols(binary: lief_ext.Binary) -> Sequence[lief.ELF.Symbol]:
     """Use heuristic to either get static symbols or dynamic symbol table
 
     Always return the dynamic symbol table first and then the static symbols
@@ -623,7 +635,7 @@ def symbols(binary: lief.Binary) -> Sequence[lief.ELF.Symbol]:
     will not include version information.
     """
     static_symbols: Sequence[lief.ELF.Symbol] = binary.static_symbols  # type: ignore
-    dynamic_symbols = list(binary.dynamic_symbols)  # type: ignore
+    dynamic_symbols = list(binary.dynamic_symbols)
     dynamic_symbol_names = set(map(lambda s: s.name, dynamic_symbols))
     all_symbols = dynamic_symbols + [
         s for s in static_symbols if s.name not in dynamic_symbol_names
@@ -633,7 +645,7 @@ def symbols(binary: lief.Binary) -> Sequence[lief.ELF.Symbol]:
 
 def register_virtual_tables(
     connection: apsw.Connection,
-    binaries: list[lief.Binary],
+    binaries: list[lief_ext.Binary],
     cache_flags: CacheFlag = CacheFlag.INSTRUCTIONS | CacheFlag.SYMBOLS,
 ) -> None:
     """Register the virtual table modules.
