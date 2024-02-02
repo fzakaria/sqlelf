@@ -63,29 +63,32 @@ def test_all_selects() -> None:
     the functionality."""
     # Generate all the SELECT statements for us
     select_all_sql = """SELECT 'SELECT * FROM ' || name || ' LIMIT 1' as 'sql'
-             FROM sqlite_schema where name LIKE 'elf_%' AND type = 'table'"""
+                        FROM sqlite_schema
+                        WHERE (name LIKE 'elf_%' OR name LIKE 'dwarf_%')
+                            AND type = 'table'"""
     engine = sql.make_sql_engine(["/bin/ls"])
     results = list(engine.execute(select_all_sql))
+    assert len(results) > 0
     for result in results:
         assert len(list(engine.execute(result["sql"]))) == 1
 
 
 @dataclass
-class TestCase:
+class SimpleSQLTestCase:
     table: str
     columns: list[str]
 
 
 def test_simple_selects() -> None:
     test_cases = [
-        TestCase(
+        SimpleSQLTestCase(
             "elf_headers", ["path", "type", "version", "machine", "entry", "is_pie"]
         ),
-        TestCase(
+        SimpleSQLTestCase(
             "elf_instructions",
             ["path", "section", "mnemonic", "address", "operands", "size"],
         ),
-        TestCase("elf_version_requirements", ["path", "file", "name"]),
+        SimpleSQLTestCase("elf_version_requirements", ["path", "file", "name"]),
     ]
     # TODO(fzakaria): Figure out a better binary to be doing that we control
     engine = sql.make_sql_engine(["/bin/ls"])
