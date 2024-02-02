@@ -19,7 +19,6 @@ from sqlelf import lief_ext
 from sqlelf._vendor.elftools.common.utils import bytes2str
 from sqlelf._vendor.elftools.dwarf.descriptions import describe_form_class
 from sqlelf._vendor.elftools.dwarf.die import DIE as DIE_t
-from sqlelf._vendor.elftools.dwarf.lineprogram import LineProgram
 from sqlelf._vendor.elftools.elf.elffile import ELFFile
 
 
@@ -647,7 +646,9 @@ def register_dwarf_debug_lines(
                 # starting point for all DWARF-based processing in pyelftools.
                 dwarf_info = elf_file.get_dwarf_info()
                 for CU in dwarf_info.iter_CUs():
-                    debug_lines: LineProgram = dwarf_info.line_program_for_CU(CU)
+                    debug_lines = dwarf_info.line_program_for_CU(CU)
+                    if debug_lines is None:
+                        continue
                     file_entries = debug_lines.header["file_entry"]
                     directory_entries = debug_lines.header["include_directory"]
                     # The line program, when decoded, returns a list of line program

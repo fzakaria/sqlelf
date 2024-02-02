@@ -63,7 +63,9 @@ def test_all_selects() -> None:
     the functionality."""
     # Generate all the SELECT statements for us
     select_all_sql = """SELECT 'SELECT * FROM ' || name || ' LIMIT 1' as 'sql'
-             FROM sqlite_schema where (name LIKE 'elf_%' OR name LIKE 'dwarf_%') AND type = 'table'"""
+                        FROM sqlite_schema
+                        WHERE (name LIKE 'elf_%' OR name LIKE 'dwarf_%')
+                            AND type = 'table'"""
     engine = sql.make_sql_engine(["/bin/ls"])
     results = list(engine.execute(select_all_sql))
     assert len(results) > 0
