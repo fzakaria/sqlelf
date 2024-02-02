@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from enum import Flag, auto
 from typing import Any, Callable, Iterator, Sequence, Tuple, cast
@@ -18,6 +19,7 @@ from sqlelf import lief_ext
 from sqlelf._vendor.elftools.common.utils import bytes2str
 from sqlelf._vendor.elftools.dwarf.descriptions import describe_form_class
 from sqlelf._vendor.elftools.dwarf.die import DIE as DIE_t
+from sqlelf._vendor.elftools.dwarf.lineprogram import LineProgram
 from sqlelf._vendor.elftools.elf.elffile import ELFFile
 
 
@@ -59,6 +61,7 @@ class CacheFlag(Flag):
     VERSION_DEFINITIONS = auto()
     DWARF_DIE = auto()
     DWARF_DIE_CALL_GRAPH = auto()
+    DWARF_DEBUG_LINES = auto()
 
     @classmethod
     def from_string(cls: type[CacheFlag], str: str) -> CacheFlag:
@@ -624,6 +627,74 @@ def register_dwarf_dies_graph(
     )
 
 
+def register_dwarf_debug_lines(
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+) -> None:
+    """Create the DWARF debug_lines virtual table."""
+
+    def dwarf_debug_lines_generator() -> Iterator[dict[str, Any]]:
+        for binary in binaries:
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.path
+            # A bit annoying but we must re-open the file
+            # since we are using a different library here
+            with open(binary_name, "rb") as f:
+                elf_file = ELFFile(f)
+                if not elf_file.has_dwarf_info():
+                    continue
+                # get_dwarf_info returns a DWARFInfo context object, which is the
+                # starting point for all DWARF-based processing in pyelftools.
+                dwarf_info = elf_file.get_dwarf_info()
+                for CU in dwarf_info.iter_CUs():
+                    debug_lines: LineProgram = dwarf_info.line_program_for_CU(CU)
+                    file_entries = debug_lines.header["file_entry"]
+                    directory_entries = debug_lines.header["include_directory"]
+                    # The line program, when decoded, returns a list of line program
+                    # entries. Each entry contains a state, which we'll use to build
+                    # a reverse mapping of filename -> #entries.
+                    lp_entries = debug_lines.get_entries()
+                    for lpe in lp_entries:
+                        # We skip LPEs that don't have an associated file.
+                        # This can happen if instructions in the compiled binary
+                        # don't correspond directly to any original source file.
+                        if not lpe.state or lpe.state.file == 0:
+                            continue
+
+                        # File and directory indices are 1-indexed.
+                        file_entry = file_entries[lpe.state.file - 1]
+                        dir_index = file_entry["dir_index"]
+                        directory = (
+                            directory_entries[dir_index - 1]
+                            if dir_index > 0
+                            else "".encode()
+                        )
+
+                        filename = os.path.join(directory, file_entry.name)
+
+                        yield {
+                            "path": binary_name,
+                            "filename": bytes2str(filename),
+                            "address": lpe.state.address,
+                            "line": lpe.state.line,
+                            "column": lpe.state.column,
+                            "cu_offset": CU.cu_offset,
+                        }
+
+    generator = Generator.make_generator(
+        ["path", "filename", "address", "line", "column", "cu_offset"],
+        dwarf_debug_lines_generator,
+    )
+
+    register_generator(
+        connection,
+        generator,
+        "dwarf_debug_lines",
+        CacheFlag.DWARF_DEBUG_LINES,
+        cache_flags,
+    )
+
+
 def symbols(binary: lief_ext.Binary) -> Sequence[lief.ELF.Symbol]:
     """Use heuristic to either get static symbols or dynamic symbol table
 
@@ -668,6 +739,7 @@ def register_virtual_tables(
         register_version_definitions,
         register_dwarf_dies,
         register_dwarf_dies_graph,
+        register_dwarf_debug_lines,
     ]
     for register_function in register_table_functions:
         register_function(binaries, connection, cache_flags)
