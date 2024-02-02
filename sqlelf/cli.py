@@ -74,9 +74,11 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
     filenames: list[str] = reduce(
         lambda a, b: a + b,
         map(
-            lambda dir: [os.path.join(dir, f) for f in os.listdir(dir)]
-            if os.path.isdir(dir)
-            else [dir],
+            lambda dir: (
+                [os.path.join(dir, f) for f in os.listdir(dir)]
+                if os.path.isdir(dir)
+                else [dir]
+            ),
             program_args.filenames,
         ),
     )

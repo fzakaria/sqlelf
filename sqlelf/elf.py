@@ -370,10 +370,12 @@ def register_symbols_generator(
                     "size": symbol.size,
                     # TODO(fzakaria): Better understand why is it auxiliary?
                     # this returns versions like GLIBC_2.2.5
-                    "version": symbol.symbol_version.symbol_version_auxiliary.name
-                    if symbol.symbol_version
-                    and symbol.symbol_version.symbol_version_auxiliary
-                    else None,
+                    "version": (
+                        symbol.symbol_version.symbol_version_auxiliary.name
+                        if symbol.symbol_version
+                        and symbol.symbol_version.symbol_version_auxiliary
+                        else None
+                    ),
                     "type": symbol.type.name,
                     "value": symbol.value,
                 }
