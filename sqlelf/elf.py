@@ -695,6 +695,11 @@ def register_dwarf_debug_lines(
         cache_flags,
     )
 
+    if CacheFlag.DWARF_DEBUG_LINES in cache_flags:
+        connection.execute(
+            """CREATE INDEX dwarf_debug_lines_cu_offset_idx ON dwarf_debug_lines (cu_offset);"""
+        )
+
 
 def symbols(binary: lief_ext.Binary) -> Sequence[lief.ELF.Symbol]:
     """Use heuristic to either get static symbols or dynamic symbol table
