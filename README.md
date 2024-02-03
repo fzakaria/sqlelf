@@ -374,7 +374,7 @@ The below uses [Debuginfod](https://debuginfod.debian.net/) to fetch the DWARF f
 
 ```console
 ❯ sqlelf $(DEBUGINFOD_URLS="https://debuginfod.debian.net" debuginfod-find debuginfo /bin/bash) --sql \
-> "SELECT DDL.filename, DIES.name, COUNT(DISTINCT DDL.line) AS line_count
+"SELECT DDL.filename, DIES.name, COUNT(DISTINCT DDL.line) AS line_count
 FROM dwarf_dies AS DIES
 JOIN dwarf_debug_lines DDL ON DIES.cu_offset = DDL.cu_offset
 WHERE DDL.address >= DIES.low_pc AND DDL.address < DIES.high_pc
