@@ -419,6 +419,36 @@ LIMIT 10;"
 ```
 </details>
 
+<details>
+<summary>Print the instructions associated with a symbol</summary>
+
+```console
+❯ sqlelf /bin/bash --sql \
+"SELECT EI.address, ES.name, mnemonic, operands, EI.size
+FROM ELF_SYMBOLS ES
+JOIN ELF_INSTRUCTIONS EI
+ON EI.PATH = ES.PATH
+WHERE
+EI.address >= ES.value
+AND EI.address <= ES.value + ES.size
+AND ES.name = 'read_builtin'
+ORDER BY EI.address ASC LIMIT 10;"
+┌─────────┬──────────────┬──────────┬──────────────────────┬──────┐
+│ address │     name     │ mnemonic │       operands       │ size │
+│ 689120  │ read_builtin │ push     │ r15                  │ 2    │
+│ 689122  │ read_builtin │ push     │ r14                  │ 2    │
+│ 689124  │ read_builtin │ push     │ r13                  │ 2    │
+│ 689126  │ read_builtin │ xor      │ r13d, r13d           │ 3    │
+│ 689129  │ read_builtin │ push     │ r12                  │ 2    │
+│ 689131  │ read_builtin │ xor      │ r12d, r12d           │ 3    │
+│ 689134  │ read_builtin │ push     │ rbp                  │ 1    │
+│ 689135  │ read_builtin │ lea      │ rbp, [rip + 0x5ddf3] │ 7    │
+│ 689142  │ read_builtin │ push     │ rbx                  │ 1    │
+│ 689143  │ read_builtin │ lea      │ rbx, [rip + 0x5de46] │ 7    │
+└─────────┴──────────────┴──────────┴──────────────────────┴──────┘
+```
+</details>
+
 ## Development
 
 You may want to install the package in _editable mode_ as well to make development easier
