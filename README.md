@@ -367,6 +367,57 @@ WARNING:root:SQLITE_LOG: automatic index on elf_strings(offset) (284) SQLITE_WAR
 
 </details>
 
+<details>
+<summary>Find the Top10 largest functions by source lines</summary>
+
+The below uses [Debuginfod](https://debuginfod.debian.net/) to fetch the DWARF file for a given binary automatically.
+
+```console
+❯ sqlelf $(DEBUGINFOD_URLS="https://debuginfod.debian.net" debuginfod-find debuginfo /bin/bash) --sql \
+> "SELECT DDL.filename, DIES.name, COUNT(DISTINCT DDL.line) AS line_count
+FROM dwarf_dies AS DIES
+JOIN dwarf_debug_lines DDL ON DIES.cu_offset = DDL.cu_offset
+WHERE DDL.address >= DIES.low_pc AND DDL.address < DIES.high_pc
+      AND tag = 'DW_TAG_subprogram'
+       AND name IS NOT NULL
+GROUP BY DDL.filename, DIES.name
+ORDER BY line_count DESC
+LIMIT 10;"
+┌────────────────────────────────────────┬────────────────────────────┬────────────┐
+│                filename                │            name            │ line_count │
+│ ./build-bash/subst.c                   │ param_expand               │ 665        │
+│ read.c                                 │ read_builtin               │ 500        │
+│ ./build-bash/subst.c                   │ expand_word_internal       │ 461        │
+│ ./build-bash/shell.c                   │ main                       │ 439        │
+│ ./build-bash/lib/readline/display.c    │ update_line                │ 408        │
+│ ./build-bash/lib/readline/histexpand.c │ history_expand             │ 401        │
+│ ./build-bash/y.tab.c                   │ yyparse                    │ 395        │
+│ declare.c                              │ declare_internal           │ 378        │
+│ ./build-bash/variables.c               │ initialize_shell_variables │ 345        │
+│ ./build-bash/lib/readline/display.c    │ rl_redisplay               │ 342        │
+└────────────────────────────────────────┴────────────────────────────┴────────────┘
+
+``````
+</details>
+
+<details>
+<summary>Find the largest functions by binary size</summary>
+
+```console
+❯ sqlelf examples/nested-symbols/exe --sql \
+"SELECT name AS function_name,
+        (high_pc - low_pc) AS function_size
+FROM dwarf_dies
+WHERE tag = 'DW_TAG_subprogram'
+ORDER BY function_size DESC
+LIMIT 10;"
+┌────────────────┬───────────────┐
+│ function_name  │ function_size │
+│ outer_function │ 38            │
+│ main           │ 21            │
+└────────────────┴───────────────┘
+```
+</details>
 
 ## Development
 
