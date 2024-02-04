@@ -56,6 +56,7 @@ packages = ["sqlelf"]
 
 [project.scripts]
 sqlelf = "sqlelf.cli:start"
+sqlelf-merge = "sqlelf.tools.merge:start"
 
 [tool.isort]
 skip = [".git", "result"]
