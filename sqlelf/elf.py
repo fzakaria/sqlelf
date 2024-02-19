@@ -55,6 +55,7 @@ class CacheFlag(Flag):
     INSTRUCTIONS = auto()
     SECTIONS = auto()
     SYMBOLS = auto()
+    RELOCATIONS = auto()
     STRINGS = auto()
     VERSION_REQUIREMENTS = auto()
     VERSION_DEFINITIONS = auto()
@@ -266,13 +267,6 @@ def register_sections_generator(
     )
 
 
-def coerce_section_name(name: str | None) -> str | None:
-    """Return a section name or undefined if the name is empty."""
-    if name == "":
-        return "undefined"
-    return name
-
-
 def register_strings_generator(
     binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
 ) -> None:
@@ -364,6 +358,10 @@ def register_symbols_generator(
                     ),
                     None,
                 )
+                if section_name is None or section_name == "":
+                    section_name = lief.ELF.SYMBOL_SECTION_INDEX.from_value(
+                        symbol.shndx
+                    ).__name__
 
                 yield {
                     "path": binary_name,
@@ -380,7 +378,7 @@ def register_symbols_generator(
                     # https://www.m4b.io/elf/export/binary/analysis/2015/05/25/what-is-an-elf-export.html
                     "imported": symbol.imported,
                     "exported": symbol.exported,
-                    "section": coerce_section_name(section_name),
+                    "section": section_name,
                     "size": symbol.size,
                     # TODO(fzakaria): Better understand why is it auxiliary?
                     # this returns versions like GLIBC_2.2.5
@@ -423,6 +421,69 @@ def register_symbols_generator(
             """CREATE INDEX elf_symbols_path_idx ON elf_symbols (path);
               CREATE INDEX elf_symbols_name_idx ON elf_symbols (name);"""
         )
+
+
+def register_relocations_generator(
+    binaries: list[lief_ext.Binary], connection: apsw.Connection, cache_flags: CacheFlag
+) -> None:
+    """Create the ELF relocations virtual table."""
+
+    def relocations_generator() -> Iterator[dict[str, Any]]:
+        for binary in binaries:
+            # super important that these accessors are pulled out of the tight loop
+            # as they can be costly
+            binary_name = binary.path
+            for relocation in binary.relocations:
+                yield {
+                    "path": binary_name,
+                    "addend": relocation.addend,
+                    "info": relocation.info,
+                    # Relocations are either of type Elf64_Rela or Elf64_Rel
+                    # the difference being whether addend is present in the struct
+                    # https://refspecs.linuxbase.org/elf/gabi4+/ch4.reloc.html
+                    "is_rela": relocation.is_rela,
+                    "purpose": relocation.purpose.__name__,
+                    "section": relocation.section.name if relocation.section else None,
+                    "symbol": relocation.symbol.name,
+                    "symbol_table": (
+                        relocation.symbol_table.name
+                        if relocation.symbol_table
+                        else None
+                    ),
+                    "type": relocation_type(
+                        binary.header.machine_type, relocation.type
+                    ),
+                }
+
+    generator = Generator.make_generator(
+        [
+            "path",
+            "addend",
+            "info",
+            "is_rela",
+            "purpose",
+            "section",
+            "symbol",
+            "symbol_table",
+            "type",
+        ],
+        relocations_generator,
+    )
+
+    register_generator(
+        connection,
+        generator,
+        "elf_relocations",
+        CacheFlag.RELOCATIONS,
+        cache_flags,
+    )
+
+
+def relocation_type(arch: lief.ELF.ARCH, type: int) -> str:
+    """Return the relocation type as a string for a given arch."""
+    if arch == lief.ELF.ARCH.x86_64:
+        return cast(str, lief.ELF.RELOCATION_X86_64.from_value(type).__name__)
+    raise RuntimeError(f"Unknown relocation type for {arch}")
 
 
 def register_version_requirements(
@@ -742,6 +803,7 @@ def register_virtual_tables(
         register_sections_generator,
         register_strings_generator,
         register_symbols_generator,
+        register_relocations_generator,
         register_version_requirements,
         register_version_definitions,
         register_dwarf_dies,
