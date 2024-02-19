@@ -6,8 +6,11 @@ TARGET = exe
 # Default rule
 all: $(TARGET)
 
-$(TARGET): main.c sum.o
-	$(CC) $(CFLAGS) -o $(TARGET) main.c sum.o
+$(TARGET): main.o sum.o
+	$(CC) $(CFLAGS) -o $(TARGET) main.o sum.o
+
+main.o: main.c sum.h
+	$(CC) $(CFLAGS) -c main.c
 
 sum.o: sum.c sum.h
 	$(CC) $(CFLAGS) -c sum.c
@@ -15,4 +18,4 @@ sum.o: sum.c sum.h
 
 .PHONY: clean
 clean:
-	rm -f $(TARGET) sum.o
+	rm -f $(TARGET) sum.o main.o
