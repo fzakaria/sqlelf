@@ -9,6 +9,7 @@ sqlelf.egg-info/
 dist/
 result
 examples/**/exe
+examples/**/*.o
 examples/**/*.so
 venv/
 temp/
