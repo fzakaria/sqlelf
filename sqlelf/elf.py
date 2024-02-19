@@ -482,7 +482,7 @@ def register_relocations_generator(
 def relocation_type(arch: lief.ELF.ARCH, type: int) -> str:
     """Return the relocation type as a string for a given arch."""
     if arch == lief.ELF.ARCH.x86_64:
-        return cast(str, lief.ELF.RELOCATION_X86_64.from_value(type).__name__)
+        return lief.ELF.RELOCATION_X86_64.from_value(type).__name__
     raise RuntimeError(f"Unknown relocation type for {arch}")
 
 
