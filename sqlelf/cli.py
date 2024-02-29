@@ -9,6 +9,8 @@ from typing import TextIO
 from sqlelf import elf
 from sqlelf import sql as api_sql
 
+import logging
+
 
 @dataclass
 class ProgramArguments:
@@ -71,11 +73,16 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
     )
 
     # Iterate through our arguments and if one of them is a directory explode it out
+    # Assuming program_args.filenames is a list of files and directories
     filenames: list[str] = reduce(
         lambda a, b: a + b,
         map(
             lambda dir: (
-                [os.path.join(dir, f) for f in os.listdir(dir)]
+                [
+                    os.path.join(root, file)
+                    for root, _, files in os.walk(dir)
+                    for file in files
+                ]
                 if os.path.isdir(dir)
                 else [dir]
             ),
@@ -88,6 +95,12 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
     # If none of the inputs are valid files, simply return
     if len(filenames) == 0:
         sys.exit("No valid ELF files were provided")
+
+    # Setup the logging config
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s",
+    )
 
     sql_engine = api_sql.make_sql_engine(
         filenames, recursive=program_args.recursive, cache_flags=program_args.cache_flag

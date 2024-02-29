@@ -21,6 +21,10 @@ from sqlelf._vendor.elftools.dwarf.descriptions import describe_form_class
 from sqlelf._vendor.elftools.dwarf.die import DIE as DIE_t
 from sqlelf._vendor.elftools.elf.elffile import ELFFile
 
+import logging
+
+LOG = logging.getLogger(__name__)
+
 
 @dataclass
 class Generator:
@@ -244,14 +248,23 @@ def register_sections_generator(
             # as they can be costly
             binary_name = binary.path
             for section in binary.sections:
-                yield {
-                    "path": binary_name,
-                    "name": section.name,
-                    "offset": section.offset,
-                    "size": section.size,
-                    "type": section.type.__name__,
-                    "content": bytes(section.content),
-                }
+                try:
+                    yield {
+                        "path": binary_name,
+                        "name": section.name,
+                        "offset": section.offset,
+                        "size": section.size,
+                        "type": section.type.__name__,
+                        "content": bytes(section.content),
+                    }
+                except RuntimeError:
+                    # TODO(fzakaria): LIEF is failing to parse some section types:
+                    # https://github.com/lief-project/LIEF/issues/1031
+                    # Just skip them for now
+                    LOG.warning(
+                        "Failed to parse section: %s (%s)", section.name, binary_name
+                    )
+                    pass
 
     generator = Generator.make_generator(
         ["path", "name", "offset", "size", "type", "content"],
@@ -443,8 +456,10 @@ def register_relocations_generator(
                     # https://refspecs.linuxbase.org/elf/gabi4+/ch4.reloc.html
                     "is_rela": relocation.is_rela,
                     "purpose": relocation.purpose.__name__,
-                    "section": relocation.section.name if relocation.section else None,
-                    "symbol": relocation.symbol.name,
+                    "section": (
+                        relocation.section.name if relocation.section else None
+                    ),
+                    "symbol": relocation.symbol.name if relocation.symbol else None,
                     "symbol_table": (
                         relocation.symbol_table.name
                         if relocation.symbol_table
