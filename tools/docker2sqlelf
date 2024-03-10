@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+
+set -e -o pipefail
+
+# Default behavior is to clean up the temporary directory
+KEEP_TEMP_DIR=false
+
+# Parse command-line arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -k|--keep) KEEP_TEMP_DIR=true ;;
+        *) IMAGE_NAME="$1" ;;
+    esac
+    shift
+done
+
+# Ensure an image name was provided
+if [ -z "$IMAGE_NAME" ]; then
+    echo "Usage: $0 [-k|--keep] <docker-image-name>"
+    exit 1
+fi
+
+# Create a temporary directory for the container's filesystem
+TEMP_DIR=$(mktemp -d)
+echo "Created temporary directory at $TEMP_DIR"
+
+# Function to cleanup on exit, if not keeping the temporary directory
+cleanup() {
+    if [ "$KEEP_TEMP_DIR" = false ]; then
+        echo "Cleaning up..."
+        # Remove temporary directory
+        rm -rf "$TEMP_DIR"
+        echo "Removed temporary directory $TEMP_DIR"
+    else
+        echo "Keeping temporary directory $TEMP_DIR"
+    fi
+}
+
+# Create a temporary directory for the container's filesystem
+TEMP_DIR=$(mktemp -d)
+echo "Created temporary directory at $TEMP_DIR"s
+
+# Trap EXIT to cleanup
+trap cleanup EXIT
+
+# Create docker container from the image
+CONTAINER_ID=$(docker create "$IMAGE_NAME")
+echo "Created container with ID $CONTAINER_ID"
+
+# Export the container's filesystem and untar it to the temporary directory
+docker export "$CONTAINER_ID" | tar -C "$TEMP_DIR" -xf -
+echo "Exported and extracted container's filesystem to $TEMP_DIR"
+
+# Remove the docker container
+docker rm "$CONTAINER_ID"
+echo "Removed container $CONTAINER_ID"
+
+# Replace colons with hyphens
+MODIFIED_IMAGE_NAME="${IMAGE_NAME//:/-}"
+
+# Uncomment the below lines if this script is failing on a distribution
+# it will run sqlelf on each file one at a time, and it will tell you
+# which file it is failing on
+# echo "Running sqlelf on the contents of $TEMP_DIR one file at a time."
+# KEEP_TEMP_DIR=true
+# find "$TEMP_DIR" -type f -print0 | while IFS= read -r -d $'\0' file; do
+#    if ! file "$file" | grep -q 'ELF'; then
+#        continue
+#    fi
+#    echo "Processing $file with sqlelf"
+#    sqlelf "$file" --sql "SELECT 1;"
+# done
+
+# Run sqlelf tool on the contents of the temporary directory
+echo "Running sqlelf on the contents of $TEMP_DIR"
+sqlelf "$TEMP_DIR" --sql ".backup ${MODIFIED_IMAGE_NAME}.sqlite"
+
+echo "Script completed successfully."
