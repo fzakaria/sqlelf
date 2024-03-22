@@ -80,6 +80,7 @@ erDiagram
 ```
 
 ## Installation
+
 ```console
 ❯ pip install sqlelf
 ❯ sqlelf /usr/bin/python3 -- \
@@ -91,6 +92,7 @@ jmp|48213
 ```
 
 ## Usage
+
 ```console
 ❯ sqlelf --help
 usage: sqlelf [-h] FILE [FILE ...]
@@ -133,6 +135,7 @@ path|type|machine|version|entry
 ```
 
 A more intricate demo showing an `INNER JOIN`, `WHERE` and `GROUP BY` across two tables which each represent different portions of the ELF format.
+
 ```console
 SQLite version 3.40.1 (APSW 3.40.0.0)
 Enter ".help" for instructions
@@ -152,6 +155,7 @@ path|num_sections
 You can provide _multiple SQL_ statements to the CLI. This is useful if you want to invoke many of the special _dot_ commands. You can use `.help` to see the list of possible commands or refer to the [apsw shell documentation](https://rogerbinns.github.io/apsw/shell.html).
 
 For instance, to have _sqelf_ emit JSON you can do the following:
+
 ```console
 ❯ sqlelf /usr/bin/ruby --sql ".mode json" --sql "select path,name from elf_sections LIMIT 3;"
 { "path": "\/usr\/bin\/ruby", "name": ""},
@@ -218,6 +222,7 @@ LIMIT 25;"
 │ /lib/x86_64-linux-gnu/libruby-3.1.so.3.1 │ /lib/x86_64-linux-gnu/libm.so.6          │ atan2                │ atan2                │
 └──────────────────────────────────────────┴──────────────────────────────────────────┴──────────────────────┴──────────────────────┘
 ```
+
 </details>
 
 <details>
@@ -238,6 +243,7 @@ HAVING count(*) >= 2;"
 │      │        │           │ symbols/x/libx.so:/usr/local/google/home/fmzakari/code/github.com/fzakaria/sqlelf/examples/shadowed-symbols/x/libx2.so                                 │
 └──────┴────────┴───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
 </details>
 
 <details>
@@ -263,6 +269,7 @@ WHERE
 │ ./examples/nested-symbols/nested │ outer_function    │ inner_symbol      │
 └──────────────────────────────────┴───────────────────┴───────────────────┘
 ```
+
 </details>
 
 <details>
@@ -292,6 +299,7 @@ For instance, the below assumes the module name is `extension` from the
 │ 3              │
 └────────────────┘
 ```
+
 </details>
 
 <details>
@@ -312,6 +320,7 @@ WHERE elf_dynamic_entries.tag = 'NEEDED'"
 │ extension.cpython-311-x86_64-linux-gnu.so │ libc.so.6     │
 └───────────────────────────────────────────┴───────────────┘
 ```
+
 </details>
 
 <details>
@@ -398,6 +407,7 @@ LIMIT 10;"
 └────────────────────────────────────────┴────────────────────────────┴────────────┘
 
 ``````
+
 </details>
 
 <details>
@@ -417,6 +427,7 @@ LIMIT 10;"
 │ main           │ 21            │
 └────────────────┴───────────────┘
 ```
+
 </details>
 
 <details>
@@ -447,11 +458,126 @@ ORDER BY EI.address ASC LIMIT 10;"
 │ 689143  │ read_builtin │ lea      │ rbx, [rip + 0x5de46] │ 7    │
 └─────────┴──────────────┴──────────┴──────────────────────┴──────┘
 ```
+
+</details>
+
+<details>
+<summary>Top 10 libraries that are linked to</summary>
+
+This query assumes you have created a sqlite database from a
+complete distribution using [docker2sqlef](./tools/docker2sqlelf).
+
+```console
+❯ sqlite3 debian-stable-20230612.sqlite <<EOF
+heredoc> SELECT library_basename, COUNT(*) as dependency_count
+FROM (
+    SELECT DISTINCT binary_path, library_basename
+    FROM (
+    SELECT REPLACE(imported_symbols.path,
+                       RTRIM(imported_symbols.path,
+                             REPLACE(imported_symbols.path, '/', '')
+                             ),
+                        '') AS binary_path,
+               imported_symbols.name AS symbol_name,
+               REPLACE(exported_symbols.path,
+                       RTRIM(exported_symbols.path,
+                             REPLACE(exported_symbols.path, '/', '')
+                             ),
+                        '') AS library_basename
+        FROM elf_symbols AS imported_symbols
+        INNER JOIN elf_symbols AS exported_symbols 
+                ON imported_symbols.name = exported_symbols.name 
+        -- Join with NEEDED entries 
+        INNER JOIN elf_dynamic_entries AS needed 
+                ON imported_symbols.path = needed.path
+            JOIN elf_strings
+                ON needed.value = elf_strings.offset
+                AND needed.tag = 'NEEDED'
+        WHERE imported_symbols.imported = 1
+            AND exported_symbols.exported = 1
+            AND elf_strings.value = library_basename
+    )
+)
+GROUP BY library_basename
+ORDER BY dependency_count DESC
+LIMIT 10;
+heredoc> EOF
+
+library_basename      dependency_count
+--------------------  ----------------
+libc.so.6             775             
+libselinux.so.1       61              
+libpam.so.0           57              
+libaudit.so.1         39              
+ld-linux-x86-64.so.2  35              
+libgcc_s.so.1         31              
+libstdc++.so.6        29              
+libblkid.so.1         28              
+libapt-pkg.so.6.0     27              
+libcom_err.so.2       25
+```
+
+</details>
+
+<details>
+<summary>Top 10 libraries based on number of symbols that are used </summary>
+
+This query assumes you have created a sqlite database from a
+complete distribution using [docker2sqlef](./tools/docker2sqlelf).
+
+```console
+❯ sqlite3 debian-stable-20230612.sqlite <<EOF
+heredoc> SELECT library_basename, COUNT(*) as import_count
+FROM (
+    SELECT REPLACE(imported_symbols.path,
+                       RTRIM(imported_symbols.path,
+                             REPLACE(imported_symbols.path, '/', '')
+                             ),
+                        '') AS binary_path,
+               imported_symbols.name AS symbol_name,
+               REPLACE(exported_symbols.path,
+                       RTRIM(exported_symbols.path,
+                             REPLACE(exported_symbols.path, '/', '')
+                             ),
+                        '') AS library_basename
+        FROM elf_symbols AS imported_symbols
+        INNER JOIN elf_symbols AS exported_symbols 
+                ON imported_symbols.name = exported_symbols.name 
+        -- Join with NEEDED entries 
+        INNER JOIN elf_dynamic_entries AS needed 
+                ON imported_symbols.path = needed.path
+            JOIN elf_strings
+                ON needed.value = elf_strings.offset
+                AND needed.tag = 'NEEDED'
+        WHERE imported_symbols.imported = 1
+            AND exported_symbols.exported = 1
+            AND elf_strings.value = library_basename
+)
+GROUP BY library_basename
+ORDER BY import_count DESC
+LIMIT 10;
+
+heredoc> EOF
+library_basename   import_count
+-----------------  ------------
+libc.so.6          353023      
+libext2fs.so.2     6358        
+libstdc++.so.6     3381        
+libapt-pkg.so.6.0  3363        
+libnettle.so.8     896         
+libselinux.so.1    785         
+libtinfo.so.6      723         
+libblkid.so.1      705         
+libgmp.so.10       592         
+libpam.so.0        428
+```
+
 </details>
 
 ## Development
 
-You may want to install the package in _editable mode_ as well to make development easier
+You may want to install the package in _editable mode_ as well to make
+development easier.
 
 ```console
 > python3 -m venv venv
