@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from enum import Flag, auto
@@ -20,8 +21,6 @@ from sqlelf._vendor.elftools.common.utils import bytes2str
 from sqlelf._vendor.elftools.dwarf.descriptions import describe_form_class
 from sqlelf._vendor.elftools.dwarf.die import DIE as DIE_t
 from sqlelf._vendor.elftools.elf.elffile import ELFFile
-
-import logging
 
 LOG = logging.getLogger(__name__)
 

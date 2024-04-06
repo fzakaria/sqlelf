@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import os.path
 import sys
@@ -8,8 +9,6 @@ from typing import TextIO
 
 from sqlelf import elf
 from sqlelf import sql as api_sql
-
-import logging
 
 
 @dataclass
