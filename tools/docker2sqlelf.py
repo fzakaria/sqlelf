@@ -2,47 +2,50 @@
 
 import argparse
 import atexit
+import logging
 import os
 import shutil
 import tempfile
 from functools import reduce
 
-import docker
+import docker  # type: ignore
 
 from sqlelf import elf, sql
+
+LOG = logging.getLogger(__name__)
 
 
 def docker2sqelf(image_name: str, keep_temp_dir: bool = False) -> str:
     client = docker.from_env()
 
     temp_dir = tempfile.mkdtemp()
-    print(f"Created temporary directory at {temp_dir}")
+    LOG.info(f"Created temporary directory at {temp_dir}")
 
-    def cleanup():
+    def cleanup() -> None:
         if not keep_temp_dir:
-            print("Cleaning up...")
+            LOG.info("Cleaning up...")
             shutil.rmtree(temp_dir)
-            print(f"Removed temporary directory {temp_dir}")
+            LOG.info(f"Removed temporary directory {temp_dir}")
         else:
-            print(f"Keeping temporary directory {temp_dir}")
+            LOG.info(f"Keeping temporary directory {temp_dir}")
 
     atexit.register(cleanup)
 
     container = client.containers.create(image_name)
-    print(f"Created container with ID {container.id}")
+    LOG.info(f"Created container with ID {container.id}")
 
     export_path = f"{temp_dir}/container.tar"
     with open(export_path, "wb") as out_f:
-        bits = container.export()
+        bits = container.export()  # pyright: ignore
         for chunk in bits:
             out_f.write(chunk)
-    print(f"Exported container's filesystem to {export_path}")
+    LOG.info(f"Exported container's filesystem to {export_path}")
 
     shutil.unpack_archive(export_path, temp_dir)
-    print(f"Extracted container's filesystem to {temp_dir}")
+    LOG.info(f"Extracted container's filesystem to {temp_dir}")
 
-    container.remove()
-    print(f"Removed container {container.id}")
+    container.remove()  # pyright: ignore
+    LOG.info(f"Removed container {container.id}")
 
     modified_image_name = image_name.replace(":", "-")
 
@@ -64,14 +67,14 @@ def docker2sqelf(image_name: str, keep_temp_dir: bool = False) -> str:
 
     filenames = [f for f in filenames if os.path.isfile(f)]
 
-    print("Creating sqlelf database")
-    engine = sql.make_sql_engine(filenames, elf.CacheFlag.ALL())
+    LOG.info("Creating sqlelf database")
+    engine = sql.make_sql_engine(filenames, cache_flags=elf.CacheFlag.ALL())
 
-    print("Dumping the sqlite database")
+    LOG.info("Dumping the sqlite database")
     database_filename = f"{modified_image_name}.sqlite"
     engine.dump(database_filename)
 
-    print(f"Created database {database_filename}")
+    LOG.info(f"Created database {database_filename}")
     return database_filename
 
 
