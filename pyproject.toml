@@ -78,7 +78,7 @@ useLibraryCodeForTypes = true
 
 pythonVersion = "3.10"
 pythonPlatform = "Linux"
-include = ["sqlelf", "tests"]
+include = ["sqlelf", "tests", "tools"]
 
 [tool.coverage.run]
 omit = ["sqlelf/_version.py", "sqlelf/**/__init__.py", "tests/**/__init__.py"]
