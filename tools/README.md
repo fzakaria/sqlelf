@@ -2,13 +2,13 @@
 
 This folder contains various tools that can be used in conjunction with sqlelf.
 
-## [docker2sqlelf](./docker2sqlelf)
+## [docker2sqlelf](./docker2sqlelf.py)
 
 This script can be given a Docker image name and produce a single sqlite file, using the sqlelf schema, containing
 all ELF libraries and binaries found within the image.
 
 ```console
-$ ./tools/docker2sqlelf debian:stable-20240211
+./tools/docker2sqlelf debian:stable-20240211
 ```
 
 A lot of interesting analysis becomes possible when you have a single sqlite file to work with.
