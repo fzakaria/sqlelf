@@ -79,6 +79,12 @@ def docker2sqelf(image_name: str, keep_temp_dir: bool = False) -> str:
 
 
 if __name__ == "__main__":
+    # Setup the logging config
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s",
+    )
+
     parser = argparse.ArgumentParser(
         description="Convert docker image to sqlelf database."
     )
