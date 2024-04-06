@@ -15,15 +15,15 @@ show:             ## Show the current environment.
 
 .PHONY: fmt
 fmt:              ## Format code using black & isort.
-	isort sqlelf/ benchmarks/ tests/
-	black sqlelf/ benchmarks/ tests/
+	isort sqlelf/ benchmarks/ tests/ tools/
+	black sqlelf/ benchmarks/ tests/ tools/
 
 .PHONY: lint
 lint:             ## Run pep8, black, mypy linters.
-	flake8 sqlelf/ benchmarks/ tests/
-	black --check sqlelf/ benchmarks/ tests/
+	flake8 sqlelf/ benchmarks/ tests/ tools/
+	black --check sqlelf/ benchmarks/ tests/ tools/
 	pyright
-	mypy --strict --install-types --non-interactive sqlelf tests
+	mypy --strict --install-types --non-interactive sqlelf tests tools
 
 .PHONY: test
 test:             ## Run pytest primarily.
