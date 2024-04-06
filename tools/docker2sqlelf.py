@@ -15,7 +15,14 @@ from sqlelf import elf, sql
 LOG = logging.getLogger(__name__)
 
 
-def docker2sqelf(image_name: str, keep_temp_dir: bool = False) -> str:
+def docker2sqlelf(image_name: str, keep_temp_dir: bool, database_path: str) -> None:
+    """Given a docker image, convert it to a sqlelf database.
+
+    Args:
+        image_name: The docker image name
+        keep_temp_dir: Whether to keep the temporary directory
+        database_path: The path to export the database to
+    """
     client = docker.from_env()
 
     temp_dir = tempfile.mkdtemp()
@@ -31,6 +38,7 @@ def docker2sqelf(image_name: str, keep_temp_dir: bool = False) -> str:
 
     atexit.register(cleanup)
 
+    client.images.pull(image_name)
     container = client.containers.create(image_name)
     LOG.info(f"Created container with ID {container.id}")
 
@@ -46,8 +54,6 @@ def docker2sqelf(image_name: str, keep_temp_dir: bool = False) -> str:
 
     container.remove()  # pyright: ignore
     LOG.info(f"Removed container {container.id}")
-
-    modified_image_name = image_name.replace(":", "-")
 
     filenames: list[str] = reduce(
         lambda a, b: a + b,
@@ -71,11 +77,9 @@ def docker2sqelf(image_name: str, keep_temp_dir: bool = False) -> str:
     engine = sql.make_sql_engine(filenames, cache_flags=elf.CacheFlag.ALL())
 
     LOG.info("Dumping the sqlite database")
-    database_filename = f"{modified_image_name}.sqlite"
-    engine.dump(database_filename)
+    engine.dump(database_path)
 
-    LOG.info(f"Created database {database_filename}")
-    return database_filename
+    LOG.info(f"Created database {database_path}")
 
 
 if __name__ == "__main__":
@@ -92,6 +96,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "-k", "--keep", help="Keep temporary directory", action="store_true"
     )
+    parser.add_argument(
+        "-d",
+        "--database",
+        help="Database path to export to",
+        default="database.sqlite",
+    )
     args = parser.parse_args()
 
-    docker2sqelf(args.image_name, args.keep)
+    docker2sqlelf(args.image_name, args.keep, args.database)
