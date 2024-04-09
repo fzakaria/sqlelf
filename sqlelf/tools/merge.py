@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import sys
 from dataclasses import dataclass, field
@@ -30,6 +31,12 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
         args: the command line arguments to parse
         stdin: the stdin to use if invoking the shell
     """
+    # Setup the logging config
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s",
+    )
+
     parser = argparse.ArgumentParser(
         prog="sqlelf-merge",
         description="Merge multiple sqlelf SQLITE databases into a single one.",
