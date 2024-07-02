@@ -225,6 +225,11 @@ def register_instructions_generator(
 
 
 def mode(binary: lief_ext.Binary) -> int:
+    if (
+        binary.header.machine_type == lief.ELF.ARCH.RISCV
+        and binary.header.identity_class == lief.ELF.ELF_CLASS.CLASS64
+    ):
+        return cast(int, capstone.CS_MODE_RISCV64)
     if binary.header.identity_class == lief.ELF.ELF_CLASS.CLASS64:
         return cast(int, capstone.CS_MODE_64)
     raise RuntimeError(f"Unknown mode for {binary.path}")
@@ -233,6 +238,8 @@ def mode(binary: lief_ext.Binary) -> int:
 def arch(binary: lief_ext.Binary) -> int:
     if binary.header.machine_type == lief.ELF.ARCH.x86_64:
         return cast(int, capstone.CS_ARCH_X86)
+    elif binary.header.machine_type == lief.ELF.ARCH.RISCV:
+        return cast(int, capstone.CS_ARCH_RISCV)
     raise RuntimeError(f"Unknown machine type for {binary.path}")
 
 
