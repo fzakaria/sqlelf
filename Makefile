@@ -23,7 +23,7 @@ lint:             ## Run pep8, black, mypy linters.
 	flake8 sqlelf/ benchmarks/ tests/ tools/
 	isort --check sqlelf/ benchmarks/ tests/ tools/
 	black --check sqlelf/ benchmarks/ tests/ tools/
-	pyright
+	pyright sqlelf/ benchmarks/ tests/ tools/
 	mypy --strict --install-types --non-interactive sqlelf tests tools
 
 .PHONY: test

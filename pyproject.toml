@@ -1,86 +1,81 @@
-[build-system]
-requires = ["setuptools", "setuptools-scm[toml]", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "sqlelf"
-# Using the dynamic version
-# version = "0.0.1"
-dynamic = ["version"]
-authors = [{ name = "Farid Zakaria", email = "farid.m.zakaria@gmail.com" }]
-readme = "README.md"
+version = "0.4"
 description = "Explore ELF objects through the power of SQL"
-license = { file = "LICENSE" }
-requires-python = ">=3.10,<4.0"
-keywords = []
+license = "MIT"
+authors = ["Farid Zakaria <farid.m.zakaria@gmail.com>"]
+
+keywords = ["binary", "elf", "sql"]
+packages = [{ include = "sqlelf" }]
+readme = "README.md"
+homepage = "https://github.com/fzakaria/sqlelf#readme"
+repository = "https://github.com/fzakaria/sqlelf"
+documentation = "https://github.com/fzakaria/sqlelf#readme"
+
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
-]
-dependencies = [
-    "capstone >= 5.0.1",
-    "lief >=0.14.1",
-    "apsw >= 3.43.1.0",
-    "sh >= 2.0.6",
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
 ]
 
-[project.urls]
-Documentation = "https://github.com/fzakaria/sqlelf#readme"
+[tool.poetry.urls]
 Issues = "https://github.com/fzakaria/sqlelf/issues"
 Source = "https://github.com/fzakaria/sqlelf"
 
-[project.optional-dependencies]
-dev = [
-    "black >= 23.7.0",
-    "isort >= 5.12.0",
-    "flake8 >= 6.1.0",
-    "flake8-print >= 5.0.0",
-    "pyright >= 1.1.350",
-    "pytest >= 7.4.0",
-    "mypy >= 1.8.0",
-    "coverage[toml] >= 7.3",
-]
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.setuptools.package-data]
-sqlelf = ["py.typed"]
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0"
+apsw = "^3.43.1.0"
+capstone = "^5.0.1"
+lief = "^0.14.1"
+sh = "^2.0.6"
 
-[tool.setuptools_scm]
-write_to = "sqlelf/_version.py"
+[tool.poetry.group.benchmarks.dependencies]
+pandas = "^2.2.2"
+plotnine = "^0.13.6"
 
-[tool.setuptools]
-packages = ["sqlelf"]
+[tool.poetry.group.dev.dependencies]
+black = "^23.7.0"
+debugpy = "^1.8.2"
+flake8 = "^6.1.0"
+flake8-print = "^5.0.0"
+isort = "^5.12.0"
+# mypy and pyright fail to install if declared here, but they can be installed
+# if they are declared in flake.nix
+# mypy = "^1.9.0"
+# pyright = "^1.1.369"
 
-[project.scripts]
-sqlelf = "sqlelf.cli:start"
-sqlelf-merge = "sqlelf.tools.merge:start"
+[tool.poetry.group.test.dependencies]
+coverage = { version = "7.3", extras = ["toml"] }
+pytest = "^7.4.0"
+
+[tool.coverage.run]
+omit = ["sqlelf/_version.py", "sqlelf/**/__init__.py", "tests/**/__init__.py"]
+branch = true
+
+[tool.black]
+extend-exclude = "sqlelf/_vendor/"
 
 [tool.isort]
 skip = [".git", "result"]
 skip_glob = ["sqlelf/_vendor/*"]
 profile = "black"
 
-[tool.black]
-extend-exclude = "sqlelf/_vendor/"
-
-[tool.pytest.ini_options]
-addopts = "-m 'not slow' --strict-markers"
-markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
+[tool.poetry.scripts]
+# examples:
+# poetry run sqlelf examples/object-relocations/exe --sql "SELECT * FROM elf_instructions LIMIT 5;"
+sqlelf = "sqlelf.cli:start"
+sqlelf-merge = "sqlelf.tools.merge:start"
 
 [tool.pyright]
 exclude = ["**/__pycache__", "sqlelf/_version.py", "sqlelf/_vendor"]
 
-reportMissingImports = true
-reportMissingTypeStubs = true
-useLibraryCodeForTypes = true
-
-pythonVersion = "3.10"
-pythonPlatform = "Linux"
-include = ["sqlelf", "tests", "tools"]
-
-[tool.coverage.run]
-omit = ["sqlelf/_version.py", "sqlelf/**/__init__.py", "tests/**/__init__.py"]
-branch = true
+[tool.pytest.ini_options]
+addopts = "-m 'not slow' --strict-markers"
+markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
