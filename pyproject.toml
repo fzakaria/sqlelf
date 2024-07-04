@@ -68,6 +68,7 @@ skip_glob = ["sqlelf/_vendor/*"]
 profile = "black"
 
 [tool.poetry.scripts]
+benchmark-symbol-size = "benchmarks.symbol_size_benchmark:main"
 # examples:
 # poetry run sqlelf examples/object-relocations/exe --sql "SELECT * FROM elf_instructions LIMIT 5;"
 sqlelf = "sqlelf.cli:start"

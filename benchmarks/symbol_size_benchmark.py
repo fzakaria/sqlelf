@@ -61,40 +61,47 @@ def sqlelf_memoized_benchmark(sqlite_database: str, num_functions: int) -> None:
 
 data = {"Number of Functions": [], "sqlelf": [], "sqlelf-memoized": [], "readelf": []}
 
-for exponent in range(1, 6):
-    num_functions = 10**exponent
-    data["Number of Functions"].append(num_functions)
 
-    print(f"Number of functions: {num_functions}")  # noqa: T201
-    # create the executable
-    with tempfile.NamedTemporaryFile(mode="w") as file:
-        file_name = file.name
-        binary_file = create_executable_file(file, num_functions)
-        data["readelf"].append(
-            min(
-                timeit.Timer(
-                    lambda: readelf_benchmark(binary_file, num_functions)
-                ).repeat(repeat=10, number=1)
+def main():
+    for exponent in range(1, 6):
+        num_functions = 10**exponent
+        data["Number of Functions"].append(num_functions)
+
+        print(f"Number of functions: {num_functions}")  # noqa: T201
+        # create the executable
+        with tempfile.NamedTemporaryFile(mode="w") as file:
+            binary_file = create_executable_file(file, num_functions)
+            data["readelf"].append(
+                min(
+                    timeit.Timer(
+                        lambda: readelf_benchmark(binary_file, num_functions)
+                    ).repeat(repeat=10, number=1)
+                )
             )
-        )
-        data["sqlelf"].append(
-            timeit.timeit(
-                lambda: sqlelf_benchmark(binary_file, num_functions), number=1
+            data["sqlelf"].append(
+                timeit.timeit(
+                    lambda: sqlelf_benchmark(binary_file, num_functions), number=1
+                )
             )
-        )
 
-        sql_engine = sql.make_sql_engine(
-            [binary_file], cache_flags=elf.CacheFlag.SYMBOLS
-        )
-
-        sqlite_database = tempfile.NamedTemporaryFile().name
-        sql_engine.dump(sqlite_database)
-        data["sqlelf-memoized"].append(
-            min(
-                timeit.Timer(
-                    lambda: sqlelf_memoized_benchmark(sqlite_database, num_functions),
-                ).repeat(repeat=10, number=1)
+            sql_engine = sql.make_sql_engine(
+                [binary_file], cache_flags=elf.CacheFlag.SYMBOLS
             )
-        )
 
-pprint.pprint(data)  # noqa: T203
+            sqlite_database = tempfile.NamedTemporaryFile().name
+            sql_engine.dump(sqlite_database)
+            data["sqlelf-memoized"].append(
+                min(
+                    timeit.Timer(
+                        lambda: sqlelf_memoized_benchmark(
+                            sqlite_database, num_functions
+                        ),
+                    ).repeat(repeat=10, number=1)
+                )
+            )
+
+    pprint.pprint(data)  # noqa: T203
+
+
+if __name__ == "__main__":
+    main()
