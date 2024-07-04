@@ -227,6 +227,11 @@ def register_instructions_generator(
 def mode(binary: lief_ext.Binary) -> int:
     if (
         binary.header.machine_type == lief.ELF.ARCH.RISCV
+        and binary.header.identity_class == lief.ELF.ELF_CLASS.CLASS32
+    ):
+        return cast(int, capstone.CS_MODE_RISCV32)
+    if (
+        binary.header.machine_type == lief.ELF.ARCH.RISCV
         and binary.header.identity_class == lief.ELF.ELF_CLASS.CLASS64
     ):
         return cast(int, capstone.CS_MODE_RISCV64)
