@@ -46,7 +46,7 @@ def docker2sqlelf(image_name: str, keep_temp_dir: bool, database_path: str) -> N
     with open(export_path, "wb") as out_f:
         bits = container.export()  # pyright: ignore
         for chunk in bits:
-            out_f.write(chunk)
+            out_f.write(chunk)  # pyright: ignore
     LOG.info(f"Exported container's filesystem to {export_path}")
 
     shutil.unpack_archive(export_path, temp_dir)
