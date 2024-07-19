@@ -39,7 +39,7 @@ def docker2sqlelf(image_name: str, keep_temp_dir: bool, database_path: str) -> N
     atexit.register(cleanup)
 
     client.images.pull(image_name)
-    container = client.containers.create(image_name) # pyright: ignore
+    container = client.containers.create(image_name)  # pyright: ignore
     LOG.info(f"Created container with ID {container.id}")
 
     export_path = f"{temp_dir}/container.tar"
