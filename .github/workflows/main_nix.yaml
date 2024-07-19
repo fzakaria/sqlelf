@@ -1,0 +1,24 @@
+name: "Build & Test (nix)"
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+    - name: Run the Magic Nix Cache
+      uses: DeterminateSystems/magic-nix-cache-action@main
+    - name: Build & check
+      run: |
+        nix build
+        nix flake check

@@ -64,7 +64,12 @@ skip_glob = ["sqlelf/_vendor/*"]
 profile = "black"
 
 [tool.black]
-extend-exclude = "sqlelf/_vendor/"
+extend-exclude = '''
+(
+    sqlelf/_vendor/
+    | sqlelf/_version.py
+)
+'''
 
 [tool.pytest.ini_options]
 addopts = "-m 'not slow' --strict-markers"

@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from unittest.mock import patch
 
@@ -5,16 +6,18 @@ import sh  # type: ignore
 
 from sqlelf import lief_ext, sql
 
+BINARY = os.getenv("TEST_BINARY", "/bin/ls")
+
 
 def test_simple_binary_real() -> None:
-    binary = lief_ext.Binary("/bin/ls")
+    binary = lief_ext.Binary(BINARY)
     result = sql.find_libraries(binary)
     assert len(result) > 0
 
 
 @patch("sh.Command")
 def test_simple_binary_mocked(Command: sh.Command) -> None:
-    binary = lief_ext.Binary("/bin/ls")
+    binary = lief_ext.Binary(BINARY)
     interpreter = binary.interpreter
     expected_return_value = """
         linux-vdso.so.1 (0x00007ffc5d8ff000)
@@ -42,14 +45,14 @@ def test_simple_binary_mocked(Command: sh.Command) -> None:
 
 
 def test_find_libraries_no_interpreter() -> None:
-    binary = lief_ext.Binary("/bin/ls")
+    binary = lief_ext.Binary(BINARY)
     binary.interpreter = ""
     result = sql.find_libraries(binary)
     assert len(result) == 0
 
 
 def test_find_libraries_missing_interpreter() -> None:
-    binary = lief_ext.Binary("/bin/ls")
+    binary = lief_ext.Binary(BINARY)
     binary.interpreter = "/nix/store/something/ld-linux.so.2"
     result = sql.find_libraries(binary)
     assert len(result) == 0
@@ -66,7 +69,7 @@ def test_all_selects() -> None:
                         FROM sqlite_schema
                         WHERE (name LIKE 'elf_%' OR name LIKE 'dwarf_%')
                             AND type = 'table'"""
-    engine = sql.make_sql_engine(["/bin/ls"])
+    engine = sql.make_sql_engine([BINARY])
     results = list(engine.execute(select_all_sql))
     assert len(results) > 0
     for result in results:
@@ -91,7 +94,7 @@ def test_simple_selects() -> None:
         SimpleSQLTestCase("elf_version_requirements", ["path", "file", "name"]),
     ]
     # TODO(fzakaria): Figure out a better binary to be doing that we control
-    engine = sql.make_sql_engine(["/bin/ls"])
+    engine = sql.make_sql_engine([BINARY])
     for test_case in test_cases:
         result = list(engine.execute(f"SELECT * FROM {test_case.table} LIMIT 1"))
         assert len(result) == 1
@@ -109,7 +112,7 @@ def test_non_existent_file() -> None:
 
 
 def test_select_with_bindings() -> None:
-    engine = sql.make_sql_engine(["/bin/ls", "/bin/cat"])
+    engine = sql.make_sql_engine([BINARY])
     result = list(
         engine.execute(
             """
@@ -117,11 +120,11 @@ def test_select_with_bindings() -> None:
             WHERE path = :path
             LIMIT 1
             """,
-            {"path": "/bin/ls"},
+            {"path": BINARY},
         )
     )
     assert len(result) == 1
     assert "path" in result[0]
-    assert result[0]["path"] == "/bin/ls"
+    assert result[0]["path"] == BINARY
     assert "file" in result[0]
     assert "name" in result[0]

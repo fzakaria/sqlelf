@@ -17,7 +17,7 @@ def test_cli_no_arguments() -> None:
 
 def test_cli_single_file_arguments() -> None:
     stdin = StringIO("")
-    cli.start(["/bin/ls"], stdin)
+    cli.start(["/bin/sh"], stdin)
 
 
 def test_cli_single_non_existent_file_arguments() -> None:
@@ -28,5 +28,5 @@ def test_cli_single_non_existent_file_arguments() -> None:
 def test_cli_prompt_single_file_arguments() -> None:
     stdin = StringIO(".exit 56\n")
     with pytest.raises(SystemExit) as err:
-        cli.start(["/bin/ls"], stdin)
+        cli.start(["/bin/sh"], stdin)
     assert err.value.code == 56
