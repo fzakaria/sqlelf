@@ -29,6 +29,8 @@
       with nixpkgsFor.${system}; {
         default = mkShellNoCC {
           venvDir = "./.venv";
+          # needed for tests
+          TEST_BINARY = "${coreutils}/bin/ls";
           packages = [
             python3Packages.pip
             # This execute some shell code to initialize a venv in $venvDir before
