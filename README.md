@@ -97,7 +97,7 @@ You can also run this via [Nix](https://nixos.org/)!
 ```console
 ❯ nix run github:fzakaria/sqlelf -- --help
 usage: sqlelf [-h] [-s SQL] [--recursive | --no-recursive] [--cache-flag CACHE_FLAG] FILE [FILE ...]
-``
+```
 
 ## Usage
 
