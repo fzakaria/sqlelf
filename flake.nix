@@ -28,10 +28,17 @@
     devShells = forAllSystems (system:
       with nixpkgsFor.${system}; {
         default = mkShellNoCC {
+          venvDir = "./.venv";
+          packages = [
+            python3Packages.pip
+            # This execute some shell code to initialize a venv in $venvDir before
+            # dropping into the shell
+            python3Packages.venvShellHook
+          ];
+          # bring all the dependencies needed to build sqlelf
           inputsFrom = [sqlelf];
-          packages = [python3Packages.pip];
-          shellHook = ''
-            echo "Happy hacking."
+          postVenvCreation = ''
+            pip install --editable ".[dev]"
           '';
         };
       });
