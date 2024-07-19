@@ -91,6 +91,14 @@ call|56209
 jmp|48213
 ```
 
+### Nix
+
+You can also run this via [Nix](https://nixos.org/)!
+```console
+❯ nix run github:fzakaria/sqlelf -- --help
+usage: sqlelf [-h] [-s SQL] [--recursive | --no-recursive] [--cache-flag CACHE_FLAG] FILE [FILE ...]
+``
+
 ## Usage
 
 ```console
@@ -590,4 +598,14 @@ A helping `Makefile` is provided to run all the _linters_ and _formatters_.
 ```console
 > make lint
 > make fmt
+```
+
+### Nix
+
+You can also develop with [Nix](https://nixos.org).
+Running the development shell should drop you into a shell with all the
+required dependencies and the editable installation already done.
+
+```console
+> nix develop
 ```
