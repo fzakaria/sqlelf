@@ -45,7 +45,7 @@ in
       [pytestCheckHook flake8 mypy isort black]
       ++ [pyright];
 
-    checkPhase = ''
+    postCheck = ''
       make lint
     '';
 
