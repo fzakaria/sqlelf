@@ -1,7 +1,10 @@
 import os
 import platform
 import shutil
+import subprocess
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 from unittest.mock import patch
 
 import lief
@@ -10,7 +13,23 @@ import sh  # type: ignore
 
 from sqlelf import lief_ext, sql
 
-BINARY = os.getenv("TEST_BINARY", "/bin/ls")
+
+def _default_test_binary() -> str:
+    build_dir = Path(__file__).parent.parent / "examples" / "nested-symbols"
+    exe = build_dir / "exe"
+    native = platform.system() == "Linux" and platform.machine() in ("x86_64", "AMD64")
+    cc = "cc" if native else "zig cc -target x86_64-linux-gnu"
+    # zig's cache defaults under $HOME, which sandboxed builds (e.g. Nix) may
+    # make deliberately unwritable; point it at a writable, stable tempdir so
+    # zig can still cache across the two generation calls in a test session.
+    cache_dir = Path(tempfile.gettempdir()) / "sqlelf-zig-cache"
+    env = {**os.environ, "ZIG_GLOBAL_CACHE_DIR": str(cache_dir)}
+    subprocess.run(["make", "-C", str(build_dir), "clean"], check=True, env=env)
+    subprocess.run(["make", "-C", str(build_dir), f"CC={cc}"], check=True, env=env)
+    return str(exe)
+
+
+BINARY = os.getenv("TEST_BINARY") or _default_test_binary()
 
 
 def _binary_is_elf(path: str) -> bool:

@@ -2,7 +2,7 @@
   lib,
   python3Packages,
   fetchPypi,
-  coreutils,
+  zig,
   pyright,
 }: let
   fs = lib.fileset;
@@ -12,7 +12,6 @@ in
     pyproject = true;
 
     SETUPTOOLS_SCM_PRETEND_VERSION = "0.0.0";
-    TEST_BINARY = "${coreutils}/bin/ls";
 
     src = fs.toSource {
       root = ./.;
@@ -43,7 +42,7 @@ in
 
     nativeCheckInputs = with python3Packages;
       [pytestCheckHook flake8 mypy isort black]
-      ++ [pyright];
+      ++ [pyright zig];
 
     postCheck = ''
       make lint
