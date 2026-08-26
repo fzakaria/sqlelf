@@ -1,7 +1,11 @@
 import os
+import platform
+import shutil
 from dataclasses import dataclass
 from unittest.mock import patch
 
+import lief
+import pytest
 import sh  # type: ignore
 
 from sqlelf import lief_ext, sql
@@ -9,6 +13,31 @@ from sqlelf import lief_ext, sql
 BINARY = os.getenv("TEST_BINARY", "/bin/ls")
 
 
+def _binary_is_elf(path: str) -> bool:
+    try:
+        return isinstance(lief.parse(path), lief.ELF.Binary)
+    except Exception:
+        return False
+
+
+def _interpreter_is_resolvable(path: str) -> bool:
+    try:
+        interpreter = lief_ext.Binary(path).interpreter
+    except Exception:
+        return False
+    return bool(interpreter) and shutil.which(interpreter) is not None
+
+
+pytestmark = pytest.mark.skipif(
+    not _binary_is_elf(BINARY),
+    reason=f"TEST_BINARY={BINARY!r} is not an ELF file",
+)
+
+
+@pytest.mark.skipif(
+    platform.system() != "Linux" or not _interpreter_is_resolvable(BINARY),
+    reason="BINARY's interpreter can't be executed in this environment",
+)
 def test_simple_binary_real() -> None:
     binary = lief_ext.Binary(BINARY)
     result = sql.find_libraries(binary)
