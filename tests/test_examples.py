@@ -3,14 +3,21 @@
 import pytest
 
 from sqlelf import elf, sql
+from tests.binaries import can_resolve_libraries
+
+# A binary big enough to pull in a deep enough library graph for the join
+# below to find 25 cross-object symbol resolutions.
+RUBY = "/usr/bin/ruby"
 
 
 @pytest.mark.slow
+@pytest.mark.skipif(
+    not can_resolve_libraries(RUBY),
+    reason=f"{RUBY} is not an ELF binary whose libraries can be resolved here",
+)
 def test_symbol_resolutions() -> None:
-    # TODO(fzakaria): Make sure this binary
-    # is always present in the CI environment.
     sql_engine = sql.make_sql_engine(
-        ["/usr/bin/ruby"], recursive=True, cache_flags=elf.CacheFlag.SYMBOLS
+        [RUBY], recursive=True, cache_flags=elf.CacheFlag.SYMBOLS
     )
     result = sql_engine.execute(
         """

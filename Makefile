@@ -31,6 +31,12 @@ test:             ## Run pytest primarily.
 	pytest
 	pytest -m "slow"
 
+.PHONY: fixture
+fixture:          ## Regenerate the committed ELF test fixture (needs Nix).
+	install -m 644 \
+		"$$(nix build --no-link --print-out-paths .#test-fixture)/hello-x86_64.elf" \
+		tests/data/hello-x86_64.elf
+
 .PHONY: coverage
 coverage:
 	coverage run -m pytest

@@ -3,6 +3,7 @@ from io import StringIO
 import pytest
 
 from sqlelf import cli
+from tests.binaries import ELF_FIXTURE
 
 
 def test_cli_bad_arguments() -> None:
@@ -17,7 +18,7 @@ def test_cli_no_arguments() -> None:
 
 def test_cli_single_file_arguments() -> None:
     stdin = StringIO("")
-    cli.start(["/bin/sh"], stdin)
+    cli.start([ELF_FIXTURE], stdin)
 
 
 def test_cli_single_non_existent_file_arguments() -> None:
@@ -28,5 +29,5 @@ def test_cli_single_non_existent_file_arguments() -> None:
 def test_cli_prompt_single_file_arguments() -> None:
     stdin = StringIO(".exit 56\n")
     with pytest.raises(SystemExit) as err:
-        cli.start(["/bin/sh"], stdin)
+        cli.start([ELF_FIXTURE], stdin)
     assert err.value.code == 56
