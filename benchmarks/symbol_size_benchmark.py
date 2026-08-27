@@ -4,6 +4,7 @@
 
 Afterwards, run the file graph_symbol_size_benchmark.py to
 generate a graph of the results."""
+
 import pprint
 import sqlite3
 import subprocess

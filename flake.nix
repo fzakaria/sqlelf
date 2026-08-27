@@ -22,8 +22,9 @@
 
     # One treefmt configuration backs both `nix fmt` and the formatting check,
     # so the two can never disagree about what formatted means.
-    treefmtFor = forAllSystems (system:
-      treefmt-nix.lib.evalModule nixpkgsFor.${system} ./treefmt.nix);
+    treefmtFor =
+      forAllSystems (system:
+        treefmt-nix.lib.evalModule nixpkgsFor.${system} ./treefmt.nix);
   in {
     overlay = final: prev: {
       sqlelf = prev.callPackage ./derivation.nix {};

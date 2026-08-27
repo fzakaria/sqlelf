@@ -66,6 +66,11 @@ skip_glob = ["sqlelf/_vendor/*"]
 profile = "black"
 
 [tool.black]
+# Pin the target so black does not infer a Python newer than the interpreter
+# running it. Without this, a black that knows about a future Python assumes
+# that target, and its AST safety check then fails to re-parse its own output
+# on the oldest interpreter we support.
+target-version = ["py310"]
 extend-exclude = '''
 (
     sqlelf/_vendor/

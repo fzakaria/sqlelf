@@ -593,12 +593,21 @@ development easier.
 > pip install --editable ".[dev]"
 ```
 
-A helping `Makefile` is provided to run all the _linters_ and _formatters_.
+A helping `Makefile` is provided to run the _linters_ and _formatters_.
 
 ```console
 > make lint
 > make fmt
 ```
+
+`make lint` runs flake8, pyright and mypy. `make fmt` is a thin wrapper over
+`nix fmt`, which formats every file in the repository with
+[treefmt](https://github.com/numtide/treefmt-nix) -- alejandra for Nix, isort
+and black for Python. Those formatters are pinned by `flake.lock` rather than
+taken from your virtualenv, because black's stable style changes between
+releases and an unpinned one disagrees with itself across machines. The same
+configuration backs the `formatting` check, so `nix flake check` fails on a
+badly formatted tree.
 
 ### Tests
 
