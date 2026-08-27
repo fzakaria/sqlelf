@@ -16,11 +16,15 @@ class ProgramArguments:
 
 def is_sqlite_file(file: str) -> bool:
     """Tests if the given file is a valid SQLite file"""
+    # Returning from inside the `with` would leave the function with no return
+    # value on the path where the context manager swallows the exception, which
+    # apsw's __exit__ signature allows.
     try:
         with apsw.Connection(file):
-            return True
+            pass
     except apsw.NotADBError:
         return False
+    return True
 
 
 def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
