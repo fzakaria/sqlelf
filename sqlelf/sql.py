@@ -8,7 +8,7 @@ from typing import Any, Dict, Iterator, Optional, TextIO
 import apsw
 import apsw.shell
 import lief
-import sh  # type: ignore
+import sh
 
 from sqlelf import elf, lief_ext
 

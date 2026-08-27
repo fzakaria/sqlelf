@@ -35,4 +35,6 @@ class Binary(base):
 
     @staticmethod
     def is_elf(path: str) -> bool:
-        return lief.is_elf(path)
+        # The overload lief declares accepts a PathLike of unknown item type,
+        # which strict mode refuses to infer through.
+        return lief.is_elf(path)  # pyright: ignore[reportUnknownMemberType]

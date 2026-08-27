@@ -25,7 +25,7 @@ dependencies = [
     "capstone >= 5.0.1",
     # lief has proven to change API a lot
     # pin it to a specific version
-    "lief ==0.14.1",
+    "lief ==0.17.6",
     "apsw >= 3.43.1.0",
     "sh >= 2.0.6",
 ]
