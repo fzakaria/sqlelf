@@ -16,7 +16,7 @@
       import nixpkgs {
         inherit system;
         overlays = [
-          self.overlay
+          self.overlays.default
         ];
       });
 
@@ -26,7 +26,7 @@
       forAllSystems (system:
         treefmt-nix.lib.evalModule nixpkgsFor.${system} ./treefmt.nix);
   in {
-    overlay = final: prev: {
+    overlays.default = final: prev: {
       sqlelf = prev.callPackage ./derivation.nix {};
 
       # Built through pkgsCross.gnu64 so the fixture is an x86_64-linux ELF no
