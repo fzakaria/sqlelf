@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from unittest.mock import patch
 
 import pytest
-import sh  # type: ignore
+import sh
 
 from sqlelf import lief_ext, sql
 from tests.binaries import ELF_FIXTURE, NATIVE_BINARY, can_resolve_libraries
@@ -34,7 +34,7 @@ def test_simple_binary_mocked(Command: sh.Command) -> None:
         libc.so.6 => /nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib/libc.so.6 (0x00007f6995bac000)
         /lib64/ld-linux-x86-64.so.2 => /nix/store/46m4xx889wlhsdj72j38fnlyyvvvvbyb-glibc-2.37-8/lib64/ld-linux-x86-64.so.2 (0x00007f6995dc1000)
     """  # noqa: E501
-    Command(interpreter).return_value = expected_return_value  # pyright: ignore
+    Command(interpreter).return_value = expected_return_value  # type: ignore[attr-defined] # noqa: E501 # pyright: ignore
     result = sql.find_libraries(binary)
     assert len(result) == 4
     assert result["fake.so.6"] == "/some-path/fake.so.6"

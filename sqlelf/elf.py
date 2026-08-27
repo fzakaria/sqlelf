@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from enum import Flag, auto
+from enum import Flag, IntEnum, auto
 from typing import Any, Callable, Iterator, Sequence, Tuple, cast
 
 import apsw
@@ -23,6 +23,21 @@ from sqlelf._vendor.elftools.dwarf.die import DIE as DIE_t
 from sqlelf._vendor.elftools.elf.elffile import ELFFile
 
 LOG = logging.getLogger(__name__)
+
+
+class SpecialSectionIndex(IntEnum):
+    """Section indices that do not refer to an entry in the section header table.
+
+    A symbol carries one of these instead of a real index when it is undefined,
+    absolute, or a common block. lief exposed them as SYMBOL_SECTION_INDEX up to
+    0.14 and dropped the enum afterwards; they are fixed by the ELF
+    specification, so sqlelf carries them rather than tracking what lief happens
+    to call them this release."""
+
+    UNDEF = 0
+    ABS = 0xFFF1
+    COMMON = 0xFFF2
+    XINDEX = 0xFFFF
 
 
 @dataclass
@@ -125,7 +140,7 @@ def register_dynamic_entries_generator(
             for entry in binary.dynamic_entries:
                 yield {
                     "path": binary_name,
-                    "tag": entry.tag.__name__,
+                    "tag": entry.tag.name,
                     "value": entry.value,
                 }
 
@@ -152,9 +167,9 @@ def register_headers_generator(
         for binary in binaries:
             yield {
                 "path": binary.path,
-                "type": binary.header.file_type.__name__,
-                "machine": binary.header.machine_type.__name__,
-                "version": binary.header.identity_version.__name__,
+                "type": binary.header.file_type.name,
+                "machine": binary.header.machine_type.name,
+                "version": binary.header.identity_version.name,
                 "entry": binary.header.entrypoint,
                 "is_pie": binary.is_pie,
             }
@@ -187,7 +202,7 @@ def register_instructions_generator(
             binary_name = binary.path
 
             for section in binary.sections:
-                if section.has(lief.ELF.SECTION_FLAGS.EXECINSTR):
+                if section.has(lief.ELF.Section.FLAGS.EXECINSTR):
                     data = bytes(section.content)
                     md = capstone.Cs(arch(binary), mode(binary))
                     # keep in mind that producing details costs more memory,
@@ -228,19 +243,19 @@ def mode(binary: lief_ext.Binary) -> int:
     machine_type = binary.header.machine_type
     identity_class = binary.header.identity_class
     if machine_type == lief.ELF.ARCH.RISCV:
-        if identity_class == lief.ELF.ELF_CLASS.CLASS32:
+        if identity_class == lief.ELF.Header.CLASS.ELF32:
             return cast(int, capstone.CS_MODE_RISCV32)
     if machine_type == lief.ELF.ARCH.RISCV:
-        if identity_class == lief.ELF.ELF_CLASS.CLASS64:
+        if identity_class == lief.ELF.Header.CLASS.ELF64:
             return cast(int, capstone.CS_MODE_RISCV64)
-    if machine_type == lief.ELF.ARCH.x86_64:
-        if identity_class == lief.ELF.ELF_CLASS.CLASS64:
+    if machine_type == lief.ELF.ARCH.X86_64:
+        if identity_class == lief.ELF.Header.CLASS.ELF64:
             return cast(int, capstone.CS_MODE_64)
     raise RuntimeError(f"Unknown mode for {binary.path}")
 
 
 def arch(binary: lief_ext.Binary) -> int:
-    if binary.header.machine_type == lief.ELF.ARCH.x86_64:
+    if binary.header.machine_type == lief.ELF.ARCH.X86_64:
         return cast(int, capstone.CS_ARCH_X86)
     elif binary.header.machine_type == lief.ELF.ARCH.RISCV:
         return cast(int, capstone.CS_ARCH_RISCV)
@@ -264,7 +279,7 @@ def register_sections_generator(
                         "name": section.name,
                         "offset": section.offset,
                         "size": section.size,
-                        "type": section.type.__name__,
+                        "type": section.type.name,
                         "content": bytes(section.content),
                     }
                 except RuntimeError:
@@ -303,7 +318,7 @@ def register_strings_generator(
             strtabs = [
                 section
                 for section in binary.sections
-                if section.type == lief.ELF.SECTION_TYPES.STRTAB
+                if section.type == lief.ELF.Section.TYPE.STRTAB
             ]
             # super important that these accessors are pulled out of the tight loop
             # as they can be costly
@@ -382,9 +397,7 @@ def register_symbols_generator(
                     None,
                 )
                 if section_name is None or section_name == "":
-                    section_name = lief.ELF.SYMBOL_SECTION_INDEX.from_value(
-                        symbol.shndx
-                    ).__name__
+                    section_name = SpecialSectionIndex(symbol.shndx).name
 
                 yield {
                     "path": binary_name,
@@ -411,7 +424,7 @@ def register_symbols_generator(
                         and symbol.symbol_version.symbol_version_auxiliary
                         else None
                     ),
-                    "type": symbol.type.__name__,
+                    "type": symbol.type.name,
                     "value": symbol.value,
                 }
 
@@ -465,7 +478,7 @@ def register_relocations_generator(
                     # the difference being whether addend is present in the struct
                     # https://refspecs.linuxbase.org/elf/gabi4+/ch4.reloc.html
                     "is_rela": relocation.is_rela,
-                    "purpose": relocation.purpose.__name__,
+                    "purpose": relocation.purpose.name,
                     "section": (
                         relocation.section.name if relocation.section else None
                     ),
@@ -475,9 +488,7 @@ def register_relocations_generator(
                         if relocation.symbol_table
                         else None
                     ),
-                    "type": relocation_type(
-                        binary.header.machine_type, relocation.type
-                    ),
+                    "type": relocation_type(relocation.type),
                 }
 
     generator = Generator.make_generator(
@@ -504,11 +515,14 @@ def register_relocations_generator(
     )
 
 
-def relocation_type(arch: lief.ELF.ARCH, type: int) -> str:
-    """Return the relocation type as a string for a given arch."""
-    if arch == lief.ELF.ARCH.x86_64:
-        return lief.ELF.RELOCATION_X86_64.from_value(type).__name__
-    raise RuntimeError(f"Unknown relocation type for {arch}")
+def relocation_type(type: lief.ELF.Relocation.TYPE) -> str:
+    """Return the relocation type as a string.
+
+    Since lief 0.15 the relocation enum is shared across architectures and each
+    member is prefixed with its own, so unlike the per-architecture enums it
+    replaced this needs no dispatch on the ELF header and does not fail on the
+    architectures sqlelf has no branch for."""
+    return type.name
 
 
 def register_version_requirements(
@@ -798,7 +812,8 @@ def symbols(binary: lief_ext.Binary) -> Sequence[lief.ELF.Symbol]:
     We prefer symbols from the dynamic symbol table because the static symbol table
     will not include version information.
     """
-    static_symbols: Sequence[lief.ELF.Symbol] = binary.static_symbols  # type: ignore
+    # lief 0.15 renamed this to match the section the symbols come from.
+    static_symbols: Sequence[lief.ELF.Symbol] = binary.symtab_symbols  # type: ignore
     dynamic_symbols = list(binary.dynamic_symbols)
     dynamic_symbol_names = set(map(lambda s: s.name, dynamic_symbols))
     all_symbols = dynamic_symbols + [
