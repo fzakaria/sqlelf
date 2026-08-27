@@ -1,9 +1,14 @@
 {
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+  };
 
   outputs = {
     self,
     nixpkgs,
+    treefmt-nix,
   }: let
     supportedSystems = ["x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin"];
     forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
@@ -14,6 +19,11 @@
           self.overlay
         ];
       });
+
+    # One treefmt configuration backs both `nix fmt` and the formatting check,
+    # so the two can never disagree about what formatted means.
+    treefmtFor = forAllSystems (system:
+      treefmt-nix.lib.evalModule nixpkgsFor.${system} ./treefmt.nix);
   in {
     overlay = final: prev: {
       sqlelf = prev.callPackage ./derivation.nix {};
@@ -23,7 +33,11 @@
       sqlelf-test-fixture = prev.pkgsCross.gnu64.callPackage ./tests/data/fixture.nix {};
     };
 
-    formatter = forAllSystems (system: (nixpkgsFor.${system}).alejandra);
+    formatter = forAllSystems (system: treefmtFor.${system}.config.build.wrapper);
+
+    checks = forAllSystems (system: {
+      formatting = treefmtFor.${system}.config.build.check self;
+    });
 
     packages = forAllSystems (system:
       {
