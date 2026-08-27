@@ -21,7 +21,7 @@ fmt:              ## Format every file with treefmt (alejandra, isort, black).
 lint:             ## Run pep8, type & static checks.
 	flake8 sqlelf/ benchmarks/ tests/ tools/
 	pyright
-	mypy --strict --install-types --non-interactive sqlelf tests tools
+	mypy --strict sqlelf tests tools
 
 .PHONY: test
 test:             ## Run pytest primarily.

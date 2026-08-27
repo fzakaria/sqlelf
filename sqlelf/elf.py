@@ -50,6 +50,9 @@ class Generator:
     columns: Sequence[str]
     column_access: apsw.ext.VTColumnAccess
     callable: Callable[[], Iterator[dict[str, Any]]]
+    # Part of apsw's VirtualModuleCallable protocol. None means the table has
+    # no primary key, which is what apsw assumes when the attribute is absent.
+    primary_key: int | None = None
 
     def __call__(self) -> Iterator[dict[str, Any]]:
         """Call the generator should return an iterator of dictionaries.
@@ -118,7 +121,13 @@ def register_generator(
     if generator_flag in cache_flags:
         table_name = f"raw_{table_name}"
 
-    apsw.ext.make_virtual_module(connection, table_name, generator)
+    # apsw declares the columns of its VirtualModuleCallable protocol as
+    # tuple[str] where it means tuple[str, ...]. A protocol attribute is
+    # invariant, so no table with a number of columns other than one can
+    # satisfy it as written. Cast rather than ignore: older apsw releases do
+    # not declare the protocol at all, and an ignore comment that is needed
+    # against one version is reported as unused against the other.
+    apsw.ext.make_virtual_module(connection, table_name, cast(Any, generator))
 
     if generator_flag in cache_flags:
         connection.execute(f"""CREATE TABLE {original_table_name}

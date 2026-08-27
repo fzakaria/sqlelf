@@ -6,6 +6,7 @@ devenv.local.nix
 sqlelf.egg-info/
 *.pyc
 .vscode/
+build/
 dist/
 result
 examples/**/exe
