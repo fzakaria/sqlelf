@@ -11,13 +11,14 @@ authors = [{ name = "Farid Zakaria", email = "farid.m.zakaria@gmail.com" }]
 readme = "README.md"
 description = "Explore ELF objects through the power of SQL"
 license = { file = "LICENSE" }
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.11,<4.0"
 keywords = []
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -66,11 +67,10 @@ skip_glob = ["sqlelf/_vendor/*"]
 profile = "black"
 
 [tool.black]
-# Pin the target so black does not infer a Python newer than the interpreter
-# running it. Without this, a black that knows about a future Python assumes
-# that target, and its AST safety check then fails to re-parse its own output
-# on the oldest interpreter we support.
-target-version = ["py310"]
+# State the floor rather than letting black infer it. A black that knows about
+# a future Python otherwise assumes that target, and its AST safety check then
+# fails to re-parse its own output on the oldest interpreter we support.
+target-version = ["py311"]
 extend-exclude = '''
 (
     sqlelf/_vendor/
@@ -89,7 +89,7 @@ reportMissingImports = true
 reportMissingTypeStubs = true
 useLibraryCodeForTypes = true
 
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 pythonPlatform = "Linux"
 include = ["sqlelf", "tests", "tools"]
 
