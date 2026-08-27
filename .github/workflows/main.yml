@@ -10,6 +10,9 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      # Report every platform's result rather than cancelling the matrix on the
+      # first failure.
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.10", "3.11"]

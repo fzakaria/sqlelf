@@ -600,6 +600,23 @@ A helping `Makefile` is provided to run all the _linters_ and _formatters_.
 > make fmt
 ```
 
+### Tests
+
+Most of the test-suite parses `tests/data/hello-x86_64.elf`, a small ELF
+binary committed to the repository. Reading a checked-in fixture rather than
+whatever `/bin/ls` happens to be means the tests behave identically everywhere,
+including on macOS where no ELF binary exists to point them at.
+
+The handful of tests that resolve shared libraries have to actually execute the
+ELF interpreter, so they use a host binary instead and are skipped when the host
+has none they can run. Set `TEST_BINARY` to choose which one.
+
+The fixture is rebuilt from `tests/data/hello.c` with Nix on a Linux machine:
+
+```console
+> make fixture
+```
+
 ### Nix
 
 You can also develop with [Nix](https://nixos.org).

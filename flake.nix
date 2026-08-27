@@ -17,13 +17,24 @@
   in {
     overlay = final: prev: {
       sqlelf = prev.callPackage ./derivation.nix {};
+
+      # Built through pkgsCross.gnu64 so the fixture is an x86_64-linux ELF no
+      # matter which platform evaluates the flake. See tests/data/fixture.nix.
+      sqlelf-test-fixture = prev.pkgsCross.gnu64.callPackage ./tests/data/fixture.nix {};
     };
 
     formatter = forAllSystems (system: (nixpkgsFor.${system}).alejandra);
 
-    packages = forAllSystems (system: {
-      default = (nixpkgsFor.${system}).sqlelf;
-    });
+    packages = forAllSystems (system:
+      {
+        default = (nixpkgsFor.${system}).sqlelf;
+      }
+      # Regenerating the fixture from a non-Linux host would mean building a
+      # GNU cross toolchain from source, so only offer the package where it is
+      # cheap. Every platform reads the committed artifact instead.
+      // nixpkgs.lib.optionalAttrs (nixpkgs.lib.hasSuffix "-linux" system) {
+        test-fixture = (nixpkgsFor.${system}).sqlelf-test-fixture;
+      });
 
     devShells = forAllSystems (system:
       with nixpkgsFor.${system}; {

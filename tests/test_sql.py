@@ -1,52 +1,30 @@
-import os
-import platform
-import shutil
 from dataclasses import dataclass
 from unittest.mock import patch
 
-import lief
 import pytest
 import sh  # type: ignore
 
 from sqlelf import lief_ext, sql
-
-BINARY = os.getenv("TEST_BINARY", "/bin/ls")
-
-
-def _binary_is_elf(path: str) -> bool:
-    try:
-        return isinstance(lief.parse(path), lief.ELF.Binary)
-    except Exception:
-        return False
-
-
-def _interpreter_is_resolvable(path: str) -> bool:
-    try:
-        interpreter = lief_ext.Binary(path).interpreter
-    except Exception:
-        return False
-    return bool(interpreter) and shutil.which(interpreter) is not None
-
-
-pytestmark = pytest.mark.skipif(
-    not _binary_is_elf(BINARY),
-    reason=f"TEST_BINARY={BINARY!r} is not an ELF file",
-)
+from tests.binaries import ELF_FIXTURE, NATIVE_BINARY, can_resolve_libraries
 
 
 @pytest.mark.skipif(
-    platform.system() != "Linux" or not _interpreter_is_resolvable(BINARY),
-    reason="BINARY's interpreter can't be executed in this environment",
+    not can_resolve_libraries(NATIVE_BINARY),
+    reason=f"{NATIVE_BINARY} is not an ELF binary whose interpreter runs here",
 )
 def test_simple_binary_real() -> None:
-    binary = lief_ext.Binary(BINARY)
+    """Resolve the libraries of a host binary by really running its
+    interpreter, which is the only test that needs a native ELF."""
+    binary = lief_ext.Binary(NATIVE_BINARY)
     result = sql.find_libraries(binary)
     assert len(result) > 0
 
 
 @patch("sh.Command")
 def test_simple_binary_mocked(Command: sh.Command) -> None:
-    binary = lief_ext.Binary(BINARY)
+    """Parse the interpreter's --list output without running it, by mocking
+    sh.Command out from under find_libraries."""
+    binary = lief_ext.Binary(ELF_FIXTURE)
     interpreter = binary.interpreter
     expected_return_value = """
         linux-vdso.so.1 (0x00007ffc5d8ff000)
@@ -74,14 +52,18 @@ def test_simple_binary_mocked(Command: sh.Command) -> None:
 
 
 def test_find_libraries_no_interpreter() -> None:
-    binary = lief_ext.Binary(BINARY)
+    """A statically linked binary has no interpreter to ask, so no libraries
+    can be resolved."""
+    binary = lief_ext.Binary(ELF_FIXTURE)
     binary.interpreter = ""
     result = sql.find_libraries(binary)
     assert len(result) == 0
 
 
 def test_find_libraries_missing_interpreter() -> None:
-    binary = lief_ext.Binary(BINARY)
+    """An interpreter that is not on this machine resolves to no libraries
+    rather than raising."""
+    binary = lief_ext.Binary(ELF_FIXTURE)
     binary.interpreter = "/nix/store/something/ld-linux.so.2"
     result = sql.find_libraries(binary)
     assert len(result) == 0
@@ -98,7 +80,7 @@ def test_all_selects() -> None:
                         FROM sqlite_schema
                         WHERE (name LIKE 'elf_%' OR name LIKE 'dwarf_%')
                             AND type = 'table'"""
-    engine = sql.make_sql_engine([BINARY])
+    engine = sql.make_sql_engine([ELF_FIXTURE])
     results = list(engine.execute(select_all_sql))
     assert len(results) > 0
     for result in results:
@@ -122,8 +104,7 @@ def test_simple_selects() -> None:
         ),
         SimpleSQLTestCase("elf_version_requirements", ["path", "file", "name"]),
     ]
-    # TODO(fzakaria): Figure out a better binary to be doing that we control
-    engine = sql.make_sql_engine([BINARY])
+    engine = sql.make_sql_engine([ELF_FIXTURE])
     for test_case in test_cases:
         result = list(engine.execute(f"SELECT * FROM {test_case.table} LIMIT 1"))
         assert len(result) == 1
@@ -141,7 +122,7 @@ def test_non_existent_file() -> None:
 
 
 def test_select_with_bindings() -> None:
-    engine = sql.make_sql_engine([BINARY])
+    engine = sql.make_sql_engine([ELF_FIXTURE])
     result = list(
         engine.execute(
             """
@@ -149,11 +130,11 @@ def test_select_with_bindings() -> None:
             WHERE path = :path
             LIMIT 1
             """,
-            {"path": BINARY},
+            {"path": ELF_FIXTURE},
         )
     )
     assert len(result) == 1
     assert "path" in result[0]
-    assert result[0]["path"] == BINARY
+    assert result[0]["path"] == ELF_FIXTURE
     assert "file" in result[0]
     assert "name" in result[0]
