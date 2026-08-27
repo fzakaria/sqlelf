@@ -121,10 +121,8 @@ def register_generator(
     apsw.ext.make_virtual_module(connection, table_name, generator)
 
     if generator_flag in cache_flags:
-        connection.execute(
-            f"""CREATE TABLE {original_table_name}
-            AS SELECT * FROM {table_name};"""
-        )
+        connection.execute(f"""CREATE TABLE {original_table_name}
+            AS SELECT * FROM {table_name};""")
 
 
 def register_dynamic_entries_generator(
@@ -453,10 +451,8 @@ def register_symbols_generator(
     )
 
     if CacheFlag.SYMBOLS in cache_flags:
-        connection.execute(
-            """CREATE INDEX elf_symbols_path_idx ON elf_symbols (path);
-              CREATE INDEX elf_symbols_name_idx ON elf_symbols (name);"""
-        )
+        connection.execute("""CREATE INDEX elf_symbols_path_idx ON elf_symbols (path);
+              CREATE INDEX elf_symbols_name_idx ON elf_symbols (name);""")
 
 
 def register_relocations_generator(
@@ -796,10 +792,8 @@ def register_dwarf_debug_lines(
     )
 
     if CacheFlag.DWARF_DEBUG_LINES in cache_flags:
-        connection.execute(
-            """CREATE INDEX dwarf_debug_lines_cu_offset_idx
-                ON dwarf_debug_lines (cu_offset);"""
-        )
+        connection.execute("""CREATE INDEX dwarf_debug_lines_cu_offset_idx
+                ON dwarf_debug_lines (cu_offset);""")
 
 
 def symbols(binary: lief_ext.Binary) -> Sequence[lief.ELF.Symbol]:

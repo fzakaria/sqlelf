@@ -65,12 +65,10 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
     # TODO(fzakaria): Consider listing from elf.py instead
     tables = []
     with apsw.Connection(program_args.filenames[0]) as conn:
-        for row in conn.execute(
-            """SELECT name
+        for row in conn.execute("""SELECT name
                         FROM sqlite_schema
                         WHERE (name LIKE 'elf_%' OR name LIKE 'dwarf_%')
-                            AND type = 'table'"""
-        ):
+                            AND type = 'table'"""):
             tables.append(row[0])
 
     with apsw.Connection(program_args.output) as conn:
@@ -86,9 +84,7 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
 
             sql = f"""
             CREATE TABLE {table} AS
-            """ + " UNION ALL ".join(
-                sql_union
-            )
+            """ + " UNION ALL ".join(sql_union)
             conn.execute(sql)
 
 

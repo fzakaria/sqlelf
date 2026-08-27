@@ -14,15 +14,12 @@ show:             ## Show the current environment.
 	@$(VIRTUAL_ENV)/bin/python -m site
 
 .PHONY: fmt
-fmt:              ## Format code using black & isort.
-	isort sqlelf/ benchmarks/ tests/ tools/
-	black sqlelf/ benchmarks/ tests/ tools/
+fmt:              ## Format every file with treefmt (alejandra, isort, black).
+	nix fmt
 
 .PHONY: lint
-lint:             ## Run pep8, black, mypy linters.
+lint:             ## Run pep8, type & static checks.
 	flake8 sqlelf/ benchmarks/ tests/ tools/
-	isort --check sqlelf/ benchmarks/ tests/ tools/
-	black --check sqlelf/ benchmarks/ tests/ tools/
 	pyright
 	mypy --strict --install-types --non-interactive sqlelf tests tools
 

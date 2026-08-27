@@ -19,8 +19,7 @@ def test_symbol_resolutions() -> None:
     sql_engine = sql.make_sql_engine(
         [RUBY], recursive=True, cache_flags=elf.CacheFlag.SYMBOLS
     )
-    result = sql_engine.execute(
-        """
+    result = sql_engine.execute("""
                         SELECT caller.path as 'caller.path',
                             callee.path as 'calee.path',
                             caller.name,
@@ -33,7 +32,6 @@ def test_symbol_resolutions() -> None:
                         caller.imported = TRUE AND
                         callee.exported = TRUE
                         LIMIT 25
-                       """
-    )
+                       """)
     rows = list(result)
     assert len(rows) == 25

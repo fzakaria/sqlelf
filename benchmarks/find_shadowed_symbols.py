@@ -35,8 +35,7 @@ for root, dirs, files in os.walk(directory):
             # i need to understand them more but they tend to show up.
             # let us also exclude the main binary and catch only interposition
             # from shared objects
-            results = engine.execute(
-                """
+            results = engine.execute("""
                 SELECT name, elf_symbols.version, count(*) as symbol_count,
                     GROUP_CONCAT(elf_headers.path, ':') as libraries
                 FROM elf_symbols, elf_headers
@@ -45,8 +44,7 @@ for root, dirs, files in os.walk(directory):
                       exported = TRUE AND section != '.bss'
                 GROUP BY name, elf_symbols.version
                 HAVING count(*) >= 2
-                """
-            )
+                """)
             rows = list(results)
             rows = list(
                 filter(
