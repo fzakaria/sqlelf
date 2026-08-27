@@ -600,7 +600,11 @@ A helping `Makefile` is provided to run the _linters_ and _formatters_.
 > make fmt
 ```
 
-`make lint` runs flake8, pyright and mypy. `make fmt` is a thin wrapper over
+`make lint` runs flake8, pyright and mypy. Both type checkers target the
+oldest Python sqlelf supports no matter which interpreter you run them on, via
+`python_version` in `mypy.ini` and `pythonVersion` in `pyproject.toml`.
+
+`make fmt` is a thin wrapper over
 `nix fmt`, which formats every file in the repository with
 [treefmt](https://github.com/numtide/treefmt-nix) -- alejandra for Nix, isort
 and black for Python. Those formatters are pinned by `flake.lock` rather than
