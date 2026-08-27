@@ -101,13 +101,15 @@ def start(args: list[str] = sys.argv[1:], stdin: TextIO = sys.stdin) -> None:
         format="%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s",
     )
 
-    sql_engine = api_sql.make_sql_engine(
+    # Close the engine on every exit path, including the SystemExit the shell
+    # raises on `.exit`, so that no lief binary outlives this function.
+    with api_sql.make_sql_engine(
         filenames, recursive=program_args.recursive, cache_flags=program_args.cache_flag
-    )
-    shell = sql_engine.shell(stdin=stdin)
+    ) as sql_engine:
+        shell = sql_engine.shell(stdin=stdin)
 
-    if program_args.sql and len(program_args.filenames) > 0:
-        for sql in program_args.sql:
-            shell.process_complete_line(sql)  # type: ignore[no-untyped-call]
-    else:
-        shell.cmdloop()  # type: ignore[no-untyped-call]
+        if program_args.sql and len(program_args.filenames) > 0:
+            for sql in program_args.sql:
+                shell.process_complete_line(sql)  # type: ignore[no-untyped-call]
+        else:
+            shell.cmdloop()  # type: ignore[no-untyped-call]

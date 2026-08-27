@@ -3,7 +3,8 @@ import re
 import sys
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Any, Dict, Iterator, Optional, TextIO
+from types import TracebackType
+from typing import Any, Dict, Iterator, Optional, TextIO, Type
 
 import apsw
 import apsw.shell
@@ -16,6 +17,27 @@ from sqlelf import elf, lief_ext
 @dataclass
 class SQLEngine:
     connection: apsw.Connection
+
+    def close(self) -> None:
+        """Close the database and release the binaries it was built from.
+
+        The generators backing the virtual tables close over the parsed lief
+        binaries, and the connection is what keeps those generators alive.
+        lief is built with nanobind, which prints every binding object still
+        alive at interpreter shutdown as a leak, so the connection has to be
+        closed rather than left to the interpreter to reclaim."""
+        self.connection.close()
+
+    def __enter__(self) -> "SQLEngine":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        self.close()
 
     def shell(self, stdin: TextIO = sys.stdin) -> apsw.shell.Shell:
         shell = apsw.shell.Shell(db=self.connection, stdin=stdin)
