@@ -66,13 +66,13 @@ jobs:
   github-release:
     name: >-
       Sign the Python 🐍 distribution 📦 with Sigstore
-      and upload them to GitHub Release
+      and attach them to the GitHub Release
     needs:
     - publish-to-pypi
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write  # IMPORTANT: mandatory for making GitHub Releases
+      contents: write  # IMPORTANT: mandatory for attaching release assets
       id-token: write  # IMPORTANT: mandatory for sigstore
 
     steps:
@@ -81,19 +81,15 @@ jobs:
       with:
         name: python-package-distributions
         path: dist/
-    - name: Sign the dists with Sigstore
+    # On a published release the action attaches every signing artifact --
+    # the dists, their sigstore bundles, and bundles for the release's own
+    # source archives -- to the release itself, through its
+    # release-signing-artifacts input, which defaults to true. That is why
+    # nothing here uploads the assets afterwards: doing so fails with "asset
+    # under the same name already exists".
+    - name: Sign the dists with Sigstore and attach them to the release
       uses: sigstore/gh-action-sigstore-python@v3.5.0
       with:
         inputs: >-
           ./dist/*.tar.gz
           ./dist/*.whl
-    - name: Upload artifact signatures to GitHub Release
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-      # Upload to the release this workflow was triggered by, using the `gh`
-      # CLI. `dist/` holds the built packages plus the sigstore-produced
-      # signatures and certificates.
-      run: >-
-        gh release upload
-        '${{ github.event.release.tag_name }}' dist/**
-        --repo '${{ github.repository }}'
