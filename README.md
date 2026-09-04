@@ -83,7 +83,7 @@ erDiagram
 
 ```console
 ❯ pip install sqlelf
-❯ sqlelf /usr/bin/python3 -- \
+❯ sqlelf /usr/bin/python3 \
 --sql "select mnemonic, COUNT(*) from elf_instructions GROUP BY mnemonic ORDER BY 2 DESC LIMIT 3"
 
 mov|223497
