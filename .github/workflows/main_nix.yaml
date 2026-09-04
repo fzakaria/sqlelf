@@ -18,9 +18,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
-    - name: Run the Magic Nix Cache
-      uses: DeterminateSystems/magic-nix-cache-action@main
+      uses: cachix/install-nix-action@v31
+      with:
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+    # Pushes what `nix build` produced -- sqlelf and its Python closure -- so a
+    # later run substitutes it instead of rebuilding. Only runs that have the
+    # secret can push; a pull request from a fork reads the cache and skips the
+    # push rather than failing.
+    - name: Set up the binary cache
+      uses: cachix/cachix-action@v17
+      with:
+        name: sqlelf
+        authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
     - name: Build & check
       run: |
         nix build
