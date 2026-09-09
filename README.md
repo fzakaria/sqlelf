@@ -632,7 +632,7 @@ The fixture is rebuilt from `tests/data/hello.c` with Nix on a Linux machine:
 
 ### Nix
 
-You can also develop with [Nix](https://nixos.org).
+You can also develop using [Nix](https://nixos.org).
 Running the development shell should drop you into a shell with all the
 required dependencies and the editable installation already done.
 
